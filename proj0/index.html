@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project 0: Visual Exploration</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 text-gray-200">
+    <div class="min-h-screen flex flex-col items-center py-12 px-4">
+        <!-- Back to Portfolio Link -->
+        <a href="../index.html"
+            class="self-start text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200 mb-8">
+            ← Back to Portfolio
+        </a>
+
+        <!-- Project Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-5xl md:text-6xl font-extrabold text-white mb-4">
+                Project 0: Becoming Friends with Your Camera
+            </h1>
+            <p class="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto">
+                An intuitive exploration of camera perspective, focal length, and the center of projection.
+            </p>
+        </header>
+
+        <!-- Project Overview -->
+        <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Overview</h2>
+            <p class="text-gray-400 leading-relaxed">
+                In this project, we want to become friends with every pixel. The first step toward this goal is to
+                become friends with our camera—e.g., the one in your smartphone. In particular, the goal of this project
+                is to get some intuitive understanding of the somewhat subtle relationship between perspective, focal
+                length/zoom, and the center of projection.
+            </p>
+        </section>
+
+        <!-- Part 1: Selfie -->
+        <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 1: Selfie: The Wrong Way vs. The Right Way</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <img src="./pt11.HEIC" alt="Wrong Way Selfie" class="w-auto h-auto rounded-lg object-contain">
+                <img src="./pt12.HEIC" alt="Right Way Selfie" class="w-full h-auto rounded-lg object-contain">
+            </div>
+            <div class="mt-6">
+                <h3 class="text-xl font-semibold text-white mb-2">Explanation</h3>
+                <p class="text-gray-400 leading-relaxed">
+                    When taking photos with a camera closer-up, you have a shorter focal length which creates wide-angle views.
+                    Thus, this can exaggerate and distort parts of you image that are closer to the lens. When taking photos from a distance, the longer 
+                    focal length creates more depth and a well-balanced natural selfie.
+                </p>
+            </div>
+        </section>
+
+        <!-- Part 2: Architectural Perspective Compression -->
+        <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 2: Architectural Perspective Compression</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <img src="./pt21.HEIC" alt="Compressed Image" class="w-full h-auto rounded-lg object-contain">
+                <img src="./pt22.HEIC" alt="Uncompressed Image" class="w-full h-auto rounded-lg object-contain">
+            </div>
+            <div class="mt-6">
+                <h3 class="text-xl font-semibold text-white mb-2">Explanation</h3>
+                <p class="text-gray-400 leading-relaxed">
+                    We recreated this same effect by taking two pictures of a long street, one zoomed in from a distance and one close up without zoom.
+                    This time, zoomed-in picture appears flattened because the longer focal length compresses the perspective, making
+                    objects appear closer together than they actually are. On the other hand, the uncompressed image, taken with a shorter focal length,
+                    preserves the real spatial relationship between objects.
+                </p>
+            </div>
+        </section>
+
+        <!-- Part 3: The Dolly Zoom -->
+        <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 3: The Dolly Zoom</h2>
+            <p class="text-gray-400 mb-6 leading-relaxed">
+                In this part, I duplicate a classic film effect called the dolly zoom. It is a camera
+                movement also known as the "Vertigo shot," after a famous scene in Hitchcock's Vertigo.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
+                <img src="./pt3.gif" alt="Dolly Zoom GIF" class="w-full h-auto rounded-lg object-contain">
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="mt-12 text-center text-gray-500">
+            &copy; 2024 My Computer Vision Portfolio. All rights reserved.
+        </footer>
+    </div>
+</body>
+
+</html>
