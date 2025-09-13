@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project 0: Visual Exploration</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 text-gray-200">
+    <div class="min-h-screen flex flex-col items-center py-12 px-4">
+        <!-- Back to Portfolio Link -->
+        <a href="../index.html"
+            class="self-start text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200 mb-8">
+            ← Back to Portfolio
+        </a>
+
+        <!-- Project Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-5xl md:text-6xl font-extrabold text-white mb-4">
+                Project 1: Images of the Russian Empire
+            </h1>
+            <p class="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto">
+                Colorizing the Prokudin-Gorskii photo collection
+            </p>
+        </header>
+
+        <!-- Project Overview -->
+        <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Overview</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                The goal of this project is to colorize the Prokudin-Gorskii photo collection from 3 single digitized glass plates
+                taken through red, green, and blue filters which we want to align.
+
+                In the first part of the project, I solved this image alignment using a simple euclidean distance metric, that searches
+                within a window of 15 pixels to find the best transformation with the lowest loss. Trying this method on the jpeg images, 
+                I found that it worked well for cathedral, but not as well for the other two images (monastery, tolbolsk). Therefore, 
+                I normalized the images and applied cropping to remove 10% on each border, which improved results for all three images.
+                Here is an example of the before and after of the monastery image:
+                
+            </p>
+            <div class="grid md:grid-cols-2 gap-8 items-center justify-center mb-6">
+            <div class="text-center">
+                <img src="./output/monastery_old.jpg" alt="monastery old"
+                    class="rounded-lg shadow-lg">
+                <p class="text-gray-400 text-sm mt-2">Displacement (old): Green (-6, 0), Red (9, 1)</p>
+            </div>
+            <div class="text-center">
+                <img src="./output/monastery.jpg" alt="monastery new"
+                    class="rounded-lg shadow-lg">
+                <p class="text-gray-400 text-sm mt-2">Displacement (NCC): Green (-3, 2), Red (3, 2)</p>
+            </div>
+            </div>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                Later on, I applied this method to the large .tif images with improvements such as using normalized cross-correlation (NCC)
+                as the alignment metric and using image gradients to find better features for alignment. I also implemented a coarse-to-fine
+                recursive search using an image pyramid to make the alignment computationally feasible for the large image, which I describe further below.
+            </p>
+        </section>
+            
+        <!-- The Image Pyramid Approach -->
+        <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Coarse-to-Fine Image Pyramid</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                While the single-scale alignment worked for the smaller .jpg files, it was not computationally feasible for the
+                large, high-resolution .tif images. To solve this, I implemented a coarse-to-fine search using an image pyramid.
+                This approach works by recursively downscaling the images to a manageable size (maximum side should be &lt; 1000).
+                Then, we perform a coarse alignment on the lowest-resolution version which gives us a good estimate which is our base case.
+                I then refine that alignment on a much smaller search window (4x4 pixels) on each higher level of the pyramid until we reach the original resolution.
+            </p>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                The process for aligning with the pyramid is as follows:
+                <ul class="list-disc list-inside text-gray-400 space-y-2 mb-6">
+                    <li>The `align_pyramid` function checks if the image is small enough. If so, it uses the simple `align` function
+                        as a base case.</li>
+                    <li>If the image is large, it's downscaled, and the function calls itself recursively on the smaller images.
+                    </li>
+                    <li>The coarse displacement from the lowest-resolution alignment is scaled back up to the next level of the
+                        pyramid.</li>
+                    <li>A final, fine-tuned search is performed on the higher-resolution images, but within a much smaller search
+                        window around the scaled-up initial guess to improve efficiency.</li>
+                </ul>
+            </p>
+            
+            <p class="text-gray-400 leading-relaxed mb-6">
+                This method significantly reduces the search space and makes the alignment of the larger .tif files both
+                accurate and maneageable. I switched to using NCC loss instead of eucliden distance because I had better results with it.
+                This pyramid approach yielded good results for most images, but I still found that some images with large differences
+                in brightness between the RGB channels had poor alignments, which is why I changed to a gradient-based metric described below.
+            </p>
+
+            <p class="text-gray-400 leading-relaxed mb-6">
+                For instance, the emir image below shows some of the issues with usuing a raw pixel intensity metric:
+            </p>
+
+            <div class="grid md:grid-cols-2 gap-8 items-center justify-center mt-8">
+                <div class="text-center">
+                    <img src="./output/emir.jpg" alt="emir old" class="rounded-lg shadow-lg">
+                    <p class="text-gray-400 text-sm mt-2">Emir (L2)</p>
+                </div>
+                <div class="text-center">
+                    <img src="./output/grad_ncc/emir_grad_ncc.jpg" class="rounded-lg shadow-lg">
+                    <p class="text-gray-400 text-sm mt-2">Emir (NCC + gradient)</p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Bells and Whistles -->
+        <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Gradient-based Features</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                <strong>Gradient-based Alignment:</strong> One bells-and-whistles feature I implemented was to use gradients to find 
+                better features for alignment. 
+                This method focuses on edges and high-frequency details, which are often more reliable for matching than overall
+                image intensity, especially if the image has largely differeing RGB channel intensities. I used the numpy.gradient() 
+                function to compute this on a 2 dimensional array, which returns the gradient in both x and y directions.
+            </p>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                Moreover, I tuned my parameters within my image pyramid to find the best values that worked with all images. The 
+                base case has a window search size of 100x100 pixels, and we crop 20% of the image on all sides. On each recursive pass, 
+                I decreased the search space to 4x4 pixels wide (2 pixels in each direction) and increased the intensity of the cropping to 30%.
+                The displacement values in the results below are from these parameters with the changes mentioned above applied.
+            </p>
+        </section>
+        
+        <!-- Results: Example Images -->
+        <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Results: All Example Images</h2>
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Cathedral -->
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-white mb-2">cathedral</h3>
+                    <img src="./output/grad_ncc/cathedral_grad_ncc.jpg" alt="cathedral"
+                        class="rounded-lg shadow-lg">
+                    <p class="text-gray-400 text-sm mt-2">
+                        Green displacement: (5, 2)<br>
+                        Red displacement: (12, 3)
+                    </p>
+                </div>
+                <!-- Monastery -->
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-white mb-2">monastery</h3>
+                    <img src="./output/grad_ncc/monastery_grad_ncc.jpg" alt="monastery"
+                        class="rounded-lg shadow-lg">
+                    <p class="text-gray-400 text-sm mt-2">
+                        Green displacement: (-3, 2)<br>
+                        Red displacement: (3, 2)
+                    </p>
+                </div>
+                <!-- Tobolsk -->
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-white mb-2">tobolsk</h3>
+                    <img src="./output/grad_ncc/tobolsk_grad_ncc.jpg" alt="tobolsk"
+                        class="rounded-lg shadow-lg">
+                    <p class="text-gray-400 text-sm mt-2">
+                        Green displacement: (3, 3)<br>
+                        Red displacement: (7, 3)
+                    </p>
+                </div>
+                <!-- Church -->
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-white mb-2">church</h3>
+                    <img src="./output/grad_ncc/church_grad_ncc.jpg" alt="church"
+                        class="rounded-lg shadow-lg">
+                    <p class="text-gray-400 text-sm mt-2">
+                        Green displacement: (26, 1)<br>
+                        Red displacement: (58, -5)
+                    </p>
+                </div>
+                <!-- Emir -->
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-white mb-2">emir</h3>
+                    <img src="./output/grad_ncc/emir_grad_ncc.jpg" alt="emir" class="rounded-lg shadow-lg">
+                    <p class="text-gray-400 text-sm mt-2">
+                        Green displacement: (49, 23)<br>
+                        Red displacement: (107, 40)
+                    </p>
+                </div>
+                <!-- Harvesters -->
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-white mb-2">harvesters</h3>
+                    <img src="./output/grad_ncc/harvesters_grad_ncc.jpg" alt="harvesters"
+                        class="rounded-lg shadow-lg">
+                    <p class="text-gray-400 text-sm mt-2">
+                        Green displacement: (60, 16)<br>
+                        Red displacement: (124, 14)
+                    </p>
+                </div>
+                <!-- Icon -->
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-white mb-2">icon</h3>
+                    <img src="./output/grad_ncc/icon_grad_ncc.jpg" alt="icon"
+                        class="rounded-lg shadow-lg">
+                    <p class="text-gray-400 text-sm mt-2">
+                        Green displacement: (36, 18)<br>
+                        Red displacement: (89, 23)
+                    </p>
+                </div>
+                <!-- Italil -->
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-white mb-2">italil</h3>
+                    <img src="./output/grad_ncc/italil_grad_ncc.jpg" alt="italil"
+                        class="rounded-lg shadow-lg">
+                    <p class="text-gray-400 text-sm mt-2">
+                        Green displacement: (39, 22)<br>
+                        Red displacement: (76, 36)
+                    </p>
+                </div>
+                <!-- Lastochikino -->
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-white mb-2">lastochikino</h3>
+                    <img src="./output/grad_ncc/lastochikino_grad_ncc.jpg" alt="lastochikino"
+                        class="rounded-lg shadow-lg">
+                    <p class="text-gray-400 text-sm mt-2">
+                        Green displacement: (-3, -2)<br>
+                        Red displacement: (76, -8)
+                    </p>
+                </div>
+                <!-- Lugano -->
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-white mb-2">lugano</h3>
+                    <img src="./output/grad_ncc/lugano_grad_ncc.jpg" alt="lugano"
+                        class="rounded-lg shadow-lg">
+                    <p class="text-gray-400 text-sm mt-2">
+                        Green displacement: (41, -17)<br>
+                        Red displacement: (93, -29)
+                    </p>
+                </div>
+                <!-- Melons -->
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-white mb-2">melons</h3>
+                    <img src="./output/grad_ncc/melons_grad_ncc.jpg" alt="melons"
+                        class="rounded-lg shadow-lg">
+                    <p class="text-gray-400 text-sm mt-2">
+                        Green displacement: (82, 9)<br>
+                        Red displacement: (179, 13)
+                    </p>
+                </div>
+                <!-- Self Portrait -->
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-white mb-2">self portrait</h3>
+                    <img src="./output/grad_ncc/self_portrait_grad_ncc.jpg" alt="self_portrait"
+                        class="rounded-lg shadow-lg">
+                    <p class="text-gray-400 text-sm mt-2">
+                        Green displacement: (78, 29)<br>
+                        Red displacement: (176, 36)
+                    </p>
+                </div>
+                <!-- Siren -->
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-white mb-2">siren</h3>
+                    <img src="./output/grad_ncc/siren_grad_ncc.jpg" alt="siren"
+                        class="rounded-lg shadow-lg">
+                    <p class="text-gray-400 text-sm mt-2">
+                        Green displacement: (48, -5)<br>
+                        Red displacement: (97, -24)
+                    </p>
+                </div>
+                <!-- Three Generations -->
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-white mb-2">three generations</h3>
+                    <img src="./output/grad_ncc/three_generations_grad_ncc.jpg" alt="three_generations"
+                        class="rounded-lg shadow-lg">
+                    <p class="text-gray-400 text-sm mt-2">
+                        Green displacement: (51, 14)<br>
+                        Red displacement: (111, 9)
+                    </p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Results: Custom Images -->
+        <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Results: Custom Images</h2>
+            <div class="grid md:grid-cols-1 gap-8">
+                <!-- Napoleon -->
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-white mb-2">napoleon</h3>
+                    <img src="./output/grad_ncc/napoleon_grad_ncc.jpg" alt="napoleon"
+                        class="rounded-lg shadow-lg">
+                    <p class="text-gray-400 text-sm mt-2">
+                        Green displacement: (63, 5)<br>
+                        Red displacement: (133, -2)
+                    </p>
+                </div>
+                <!-- Vmalorossii -->
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-white mb-2">v malorossii</h3>
+                    <img src="./output/grad_ncc/vmalorossii_grad_ncc.jpg" alt="v malorossii"
+                        class="rounded-lg shadow-lg">
+                    <p class="text-gray-400 text-sm mt-2">
+                        Green displacement: (-23, 9)<br>
+                        Red displacement: (-34, 12)
+                    </p>
+                </div>
+                <!-- Voranzhereie -->
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-white mb-2">v oranzhereie</h3>
+                    <img src="./output/grad_ncc/voranzhereie_grad_ncc.jpg" alt="v oranzhereie"
+                        class="rounded-lg shadow-lg">
+                    <p class="text-gray-400 text-sm mt-2">
+                        Green displacement: (59, 27)<br>
+                        Red displacement: (126, 34)
+                    </p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Conclusion -->
+        <section class="w-full max-w-4xl bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Conclusion</h2>
+            <p class="text-gray-400 leading-relaxed">
+                By combining a robust alignment algorithm with a coarse-to-fine image pyramid, and enhancing the metric with NCC
+                and gradient features, I was able to successfully colorize all the images from the Prokudin-Gorskii collection, 
+                aligning red and green glass plate negatives to the blue plate.
+            </p>
+        </section>
+    </div>
+</body>
+
+</html>
