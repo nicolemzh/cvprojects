@@ -1,6 +1,58 @@
 In order to run any specific image, change the path and the name in `main.py`.
 
 
+Directory structure:
+└── proj3
+    ├── README
+    ├── data
+    │   ├── bancroft1.jpeg
+    │   ├── bancroft2.jpeg
+    │   ├── frame.jpeg
+    │   ├── garage1.jpeg
+    │   ├── garage2.jpeg
+    │   ├── haas1.jpeg
+    │   ├── haas2.jpeg
+    │   ├── path1.jpeg
+    │   ├── path2.jpeg
+    │   ├── room1.jpeg
+    │   ├── room2.jpeg
+    │   └── window.jpeg
+    ├── index.html
+    ├── main.py
+    ├── output
+    │   ├── bancroft.jpg
+    │   ├── correspondence_bancroft.jpg
+    │   ├── correspondence_garage.jpg
+    │   ├── correspondence_haas.jpg
+    │   ├── correspondence_path.jpg
+    │   ├── correspondence_room.jpg
+    │   ├── garage.jpg
+    │   ├── haas.jpg
+    │   ├── mosaic_bancroft.jpg
+    │   ├── mosaic_garage.jpg
+    │   ├── mosaic_haas.jpg
+    │   ├── mosaic_path.jpg
+    │   ├── mosaic_room.jpg
+    │   ├── path.jpg
+    │   ├── rectification.jpg
+    │   ├── rectification_window.jpg
+    │   ├── room.jpg
+    │   ├── warping_bilinear_bancroft.jpg
+    │   ├── warping_bilinear_garage.jpg
+    │   ├── warping_bilinear_haas.jpg
+    │   ├── warping_bilinear_path.jpg
+    │   ├── warping_bilinear_room.jpg
+    │   ├── warping_comparison_bancroft.jpg
+    │   ├── warping_comparison_garage.jpg
+    │   ├── warping_comparison_haas.jpg
+    │   ├── warping_comparison_path.jpg
+    │   ├── warping_comparison_room.jpg
+    │   ├── warping_nn_bancroft.jpg
+    │   ├── warping_nn_garage.jpg
+    │   ├── warping_nn_haas.jpg
+    │   ├── warping_nn_path.jpg
+    │   └── warping_nn_room.jpg
+
 A.2:
 (Faculty)
 System of equations for 9 point correspondences: Ah = b
