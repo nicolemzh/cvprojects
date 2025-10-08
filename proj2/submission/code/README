@@ -1,0 +1,123 @@
+Due to the length and complexity of this project, I decided to organize the code in a better way than just a single main.py file.
+
+utils.py: contains the helper functions mostly necessary in part 1 and 2.1
+convolution.py: contains the code for part 1 and 2.1
+hybrid_image_starter.py: contains the code for part 2.2
+stacks.py: contains the code necessary in part 2.3 and 2.4
+
+Here is where I have setup the files in my directory in order for the image paths to work correctly:
+.
+├── **pycache**
+│ └── utils.cpython-313.pyc
+├── convolution.py
+├── data
+│ ├── apple.jpeg
+│ ├── bird.jpg
+│ ├── blurry_forest.jpg
+│ ├── blurry_nyc.jpg
+│ ├── cameraman.png
+│ ├── earth.jpeg
+│ ├── mars.jpeg
+│ ├── minecraft_cow.jpg
+│ ├── minecraft_pig.jpg
+│ ├── orange.jpeg
+│ ├── self_portrait.jpg
+│ ├── self_portrait_2.jpg
+│ ├── self_portrait_2_cropped.jpg
+│ ├── self_portrait_cropped.jpg
+│ └── taj.jpg
+├── hybrid_python
+│ ├── DerekPicture.jpg
+│ ├── **pycache**
+│ │ └── align_image_code.cpython-313.pyc
+│ ├── align_image_code.py
+│ ├── align_image_code.py~
+│ ├── banana.jpg
+│ ├── boat.jpg
+│ ├── hybrid_image_starter.py
+│ ├── ladybug.jpg
+│ ├── nutmeg.jpg
+│ └── pepperoni_pizza.jpg
+├── index.html
+├── output
+│ ├── part1_1
+│ │ ├── box_portrait.jpg
+│ │ ├── box_scipy_portrait.jpg
+│ │ ├── box_simple_portrait.jpg
+│ │ ├── dx_portrait.jpg
+│ │ ├── dx_portrait_gray.jpg
+│ │ ├── dy_portrait.jpg
+│ │ ├── dy_portrait_gray.jpg
+│ │ └── portrait_gray.jpg
+│ ├── part1_2
+│ │ ├── cameraman_edges.jpg
+│ │ ├── dx_cameraman.jpg
+│ │ ├── dx_cameraman_gray.jpg
+│ │ ├── dy_cameraman.jpg
+│ │ └── dy_cameraman_gray.jpg
+│ ├── part1_3
+│ │ ├── cameraman_blurred.jpg
+│ │ ├── cameraman_dog_process.jpg
+│ │ ├── cameraman_edges.jpg
+│ │ ├── cameraman_edges_dog.jpg
+│ │ ├── dog_x.jpg
+│ │ ├── dog_x_screenshot.jpg
+│ │ ├── dog_y.jpg
+│ │ ├── dog_y_screenshot.jpg
+│ │ ├── dx_cameraman.jpg
+│ │ ├── dx_cameraman_dog.jpg
+│ │ ├── dy_cameraman.jpg
+│ │ ├── dy_cameraman_dog.jpg
+│ │ ├── gaussian_kernel.jpg
+│ │ └── gaussian_kernel_screenshot.jpg
+│ ├── part2_1
+│ │ ├── bird_gray.jpg
+│ │ ├── bird_sharpened.jpg
+│ │ ├── bird_sharpened_process.jpg
+│ │ ├── blurry_bird.jpg
+│ │ ├── forest_gray.jpg
+│ │ ├── forest_sharpened.jpg
+│ │ ├── forest_sharpened_process.jpg
+│ │ ├── nyc_gray.jpg
+│ │ ├── nyc_sharpened.jpg
+│ │ ├── nyc_sharpened_2.jpg
+│ │ ├── nyc_sharpened_process.jpg
+│ │ ├── taj_gray.jpg
+│ │ ├── taj_sharpened.jpg
+│ │ └── taj_sharpened_process.jpg
+│ ├── part2_2
+│ │ ├── banana_boat_hybrid.png
+│ │ ├── banana_boat_hybrid_fft.png
+│ │ ├── ladybug_pepperoni_hybrid.png
+│ │ ├── ladybug_pepperoni_hybrid_fft.png
+│ │ ├── prof_cat_hybrid.png
+│ │ └── prof_cat_hybrid_fft.png
+│ └── part2_4
+│ ├── mearth.jpg
+│ ├── mearth_blending_process.jpg
+│ ├── mearth_blending_process_fig_10.jpg
+│ ├── oraple.jpg
+│ ├── oraple_blending_process.jpg
+│ ├── oraple_blending_process_fig_10.jpg
+│ ├── pow.jpg
+│ ├── pow_2.jpg
+│ ├── pow_blending_process.jpg
+│ ├── pow_blending_process_2.jpg
+│ ├── pow_blending_process_circle.jpg
+│ ├── pow_blending_process_circle_fig.jpg
+│ ├── pow_blending_process_circle_fig_10.jpg
+│ └── pow_circle.jpg
+├── stacks.py
+├── submission
+│ ├── code
+│ │ ├── README
+│ │ ├── align_image_code.py
+│ │ ├── convolution.py
+│ │ ├── hybrid_image_starter.py
+│ │ ├── stacks.py
+│ │ └── utils.py
+│ └── web
+│ └── page.pdf
+└── utils.py
+
+15 directories, 98 files
