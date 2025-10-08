@@ -1,4 +1,5 @@
-In order to run any specific image, change the path and the name in `main.py`.
+In order to run any specific image, change the path and the name in `main.py`. The required images are 
+hosted on the github here: https://github.com/nicolemzh/cvprojects/tree/main/proj3/data.
 
 
 Directory structure:
