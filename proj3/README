@@ -1,6 +1,8 @@
 In order to run any specific image, change the path and the name in `main.py`. The required images are 
 hosted on the github here: https://github.com/nicolemzh/cvprojects/tree/main/proj3/data.
 
+Currently, part 3a is commented out. Make sure to uncomment part 3a code (in main.py) to run part 3a.
+
 
 Directory structure:
 └── proj3
@@ -20,6 +22,7 @@ Directory structure:
     │   └── window.jpeg
     ├── index.html
     ├── main.py
+    ├── harris.py # provided code
     ├── output
     │   ├── bancroft.jpg
     │   ├── correspondence_bancroft.jpg
@@ -53,6 +56,58 @@ Directory structure:
     │   ├── warping_nn_haas.jpg
     │   ├── warping_nn_path.jpg
     │   └── warping_nn_room.jpg
+    ├── output_part2
+    │   ├── bancroft.jpg
+    │   ├── feature_descriptor_bancroft1.jpg
+    │   ├── feature_descriptor_bancroft2.jpg
+    │   ├── feature_descriptor_garage1.jpg
+    │   ├── feature_descriptor_garage2.jpg
+    │   ├── feature_descriptor_haas1.jpg
+    │   ├── feature_descriptor_haas2.jpg
+    │   ├── feature_descriptor_path1.jpg
+    │   ├── feature_descriptor_path2.jpg
+    │   ├── feature_descriptor_room1.jpg
+    │   ├── feature_descriptor_room2.jpg
+    │   ├── feature_matching_bancroft.jpg
+    │   ├── feature_matching_garage.jpg
+    │   ├── feature_matching_haas.jpg
+    │   ├── feature_matching_path.jpg
+    │   ├── feature_matching_room.jpg
+    │   ├── garage.jpg
+    │   ├── haas.jpg
+    │   ├── harris_corner_ANMS bancroft1.jpg
+    │   ├── harris_corner_ANMS bancroft2.jpg
+    │   ├── harris_corner_ANMS garage1.jpg
+    │   ├── harris_corner_ANMS garage2.jpg
+    │   ├── harris_corner_ANMS haas1.jpg
+    │   ├── harris_corner_ANMS haas2.jpg
+    │   ├── harris_corner_ANMS path1.jpg
+    │   ├── harris_corner_ANMS path2.jpg
+    │   ├── harris_corner_ANMS room1.jpg
+    │   ├── harris_corner_ANMS room2.jpg
+    │   ├── harris_corner_bancroft1.jpg
+    │   ├── harris_corner_bancroft2.jpg
+    │   ├── harris_corner_garage1.jpg
+    │   ├── harris_corner_garage2.jpg
+    │   ├── harris_corner_haas1.jpg
+    │   ├── harris_corner_haas2.jpg
+    │   ├── harris_corner_path1.jpg
+    │   ├── harris_corner_path2.jpg
+    │   ├── harris_corner_room1.jpg
+    │   ├── harris_corner_room2.jpg
+    │   ├── mosaic_auto_bancroft.jpg
+    │   ├── mosaic_auto_garage.jpg
+    │   ├── mosaic_auto_haas.jpg
+    │   ├── mosaic_auto_path.jpg
+    │   ├── mosaic_auto_room.jpg
+    │   ├── path.jpg
+    │   ├── ransac_bancroft.jpg
+    │   ├── ransac_garage.jpg
+    │   ├── ransac_haas.jpg
+    │   ├── ransac_path.jpg
+    │   ├── ransac_room.jpg
+    │   └── room.jpg
+
 
 A.2:
 (Faculty)
