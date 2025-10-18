@@ -4,6 +4,7 @@ import cv2
 from scipy.ndimage import distance_transform_edt
 import skimage.io as skio
 import skimage.util as skutil
+from harris import get_harris_corners
 
 def save_image(image, filename):
     if image.dtype in [np.float32, np.float64]:
@@ -14,6 +15,9 @@ def save_image(image, filename):
     
     skio.imsave(filename, im_out_uint8)
 
+'''
+PART A
+'''
 def computeH(im1_pts, im2_pts):
     '''
     im1_pts, im2_pts are nx2 matrices
@@ -362,8 +366,7 @@ def visualizeMosaic(im1_rgb, im2_rgb, im1_warped_bil, mosaic, name=""):
     plt.savefig(f'output/mosaic_{name}.jpg', bbox_inches='tight')
     plt.show()
 
-def printSystem(A, b, H, h, name=""):
-    n = im1_pts.shape[0]
+def printSystem(A, b, H, h, n, name=""):
     print(f"{name} System")
     print(f"System of equations for {n} point correspondences: Ah = b")
     print(f"\nMatrix A ({A.shape[0]} × {A.shape[1]}):")
@@ -378,13 +381,328 @@ def printSystem(A, b, H, h, name=""):
     print(f"\nRecovered Homography Matrix H ({H.shape[0]} x {H.shape[1]}):")
     print(H)
 
+'''
+PART B
+'''
+def detectCorners(im1, im2, name=""):
+
+    gray1 = cv2.cvtColor(im1, cv2.COLOR_RGB2GRAY)
+    gray2 = cv2.cvtColor(im2, cv2.COLOR_RGB2GRAY)
+    
+    h1, coords1 = get_harris_corners(gray1)
+    h2, coords2 = get_harris_corners(gray2)
+
+    visualizeCorners(im1, coords1, f"{name}1")
+    visualizeCorners(im2, coords2, f"{name}2")
+
+    coords1 = adaptive_nonmaximal_suppression(coords1, h1)
+    coords2 = adaptive_nonmaximal_suppression(coords2, h2)
+
+    visualizeCorners(im1, coords1, f"ANMS {name}1")
+    visualizeCorners(im2, coords2, f"ANMS {name}2")
+
+    descriptors1, coords1 = extract_feature_descriptors(gray1, coords1)
+    descriptors2, coords2 = extract_feature_descriptors(gray2, coords2)
+
+    print(f"Detected {descriptors1.shape[0]} features in Image 1 ({name}1)"
+          f" and {descriptors2.shape[0]} features in Image 2 ({name}2).")
+    
+    visualize_feature_descriptors(descriptors1, num_features=64, 
+                             name=f"{name}1", use_colormap=False)
+    visualize_feature_descriptors(descriptors2, num_features=64, 
+                             name=f"{name}2", use_colormap=False)
+    
+    matches, coord1_matches, coord2_matches = match_features(
+        descriptors1, descriptors2, coords1, coords2, thresh=0.7)
+    
+    visualize_matches(im1, im2, coord1_matches, coord2_matches, name=name)
+
+    H, inliers = ransac(matches, coords1, coords2, num_iterations=1000, threshold=1.0)
+    visualize_inliers_outliers(im1, im2, matches, coords1, coords2, inliers, name=name)
+    mosaic = visualize_auto_mosaic(im1, im2, H, name=name)
+
+# Adaptive Non-Maximal Suppression (ANMS)
+def adaptive_nonmaximal_suppression(coords, h, num_points=500, c_robust=0.9):
+    n = coords.shape[1]
+    
+    if n <= num_points:
+        return coords
+
+    strengths = h[coords[0, :], coords[1, :]]
+
+    order = np.argsort(-strengths) # idx, sort by strength descending
+    coords = coords[:, order]
+    strengths = strengths[order]
+
+    radii = np.full(n, float('inf'))
+
+    for i in range(1, n):
+        dy = coords[0, :i] - coords[0, i]
+        dx = coords[1, :i] - coords[1, i]
+        dist = np.sqrt(dy**2 + dx**2)
+
+        valid = strengths[:i] > strengths[i] * c_robust
+        if np.any(valid):
+            radii[i] = np.min(dist[valid])
+
+    idx = np.argsort(-radii)[:num_points]
+    return coords[:, idx]
+
+def extract_feature_descriptors(im, coords, descriptor_size=8, sample_spacing=5):
+    n = coords.shape[1]
+    h, w = im.shape
+
+    window_size = (descriptor_size - 1) * sample_spacing
+    window_half = window_size // 2
+    descriptors = []
+    valid = []
+    
+    for i in range(n):
+        x, y = int(coords[1, i]), int(coords[0, i])
+        if (y - window_half < 0 or y + window_half >= h or
+            x - window_half < 0 or x + window_half >= w):
+            continue
+
+        y_points = [y - window_half + sample_spacing * k for k in range(descriptor_size)]
+        x_points = [x - window_half + sample_spacing * k for k in range(descriptor_size)]
+        
+        window = im[np.ix_(y_points, x_points)].astype(np.float32)
+
+        # flatten to get descriptor vector
+        desc = window.flatten()
+
+        desc = (desc - np.mean(desc)) / np.std(desc)
+        descriptors.append(desc)
+        valid.append([y, x])
+    
+    return np.array(descriptors), np.array(valid).T
+
+def match_features(desc1, desc2, coords1, coords2, thresh=0.7):
+    n1 = desc1.shape[0]
+    n2 = desc2.shape[0]
+
+    matches = []
+
+    for i in range(n1):
+        dists = np.linalg.norm(desc2 - desc1[i], axis=1)
+        if n2 < 2:
+            continue
+        idx_sorted = np.argsort(dists)
+
+        # perform Lowe's test: compare ratio between 1-NN and 2-NN
+        ratio = dists[idx_sorted[0]] / dists[idx_sorted[1]]
+        if ratio < thresh:
+            matches.append([i, idx_sorted[0]])
+
+    matches = np.array(matches)
+
+    coord1_matches = coords1[:, matches[:, 0]]
+    coord2_matches = coords2[:, matches[:, 1]]
+    return matches, coord1_matches, coord2_matches
+
+def ransac(matches, coords1, coords2, num_iterations=1000, threshold=1.0):
+    n = matches.shape[0]
+    res = []
+
+    for iter in range(num_iterations):
+        random_idx = np.random.choice(matches.shape[0], 4, replace=False)
+        
+        # get corresponding points in (y, x) order and compute H
+        pts1 = np.array([[coords1[1, matches[random_idx[i], 0]], 
+                         coords1[0, matches[random_idx[i], 0]]] for i in range(len(random_idx))])
+        pts2 = np.array([[coords2[1, matches[random_idx[i], 1]], 
+                         coords2[0, matches[random_idx[i], 1]]] for i in range(len(random_idx))])
+
+        _, _, H, _ = computeH(pts1, pts2)
+
+        inliers = []
+        for i in range(n):
+            p1 = np.array([coords1[1, matches[i, 0]], coords1[0, matches[i, 0]], 1])
+            p2 = np.array([coords2[1, matches[i, 1]], coords2[0, matches[i, 1]]])
+            
+            # apply homography and normalize
+            p1_proj = H @ p1
+            p1_proj = p1_proj / p1_proj[2]
+
+            # if distance is within threshold, count as inlier
+            if np.linalg.norm(p1_proj[:2] - p2) < threshold:
+                inliers.append(i)
+            
+        if len(inliers) > len(res):
+            res = inliers
+    
+    # recompute H
+    inlier_pts1 = np.array([[coords1[1, matches[i, 0]], coords1[0, matches[i, 0]]] for i in res])
+    inlier_pts2 = np.array([[coords2[1, matches[i, 1]], coords2[0, matches[i, 1]]] for i in res])
+
+    _, _, H, _ = computeH(inlier_pts1, inlier_pts2)
+
+    return H, res
+
+def visualizeCorners(im, coords, name=""):
+    plt.figure(figsize=(12, 8))
+    
+    if len(im.shape) == 2:
+        plt.imshow(im, cmap='gray')
+    else:
+        plt.imshow(im)
+
+    plt.plot(coords[1, :], coords[0, :], 'r+', markersize=4, markeredgewidth=1)
+    plt.title(f"Harris Corner Detection ({name})", fontsize=16)
+    plt.axis('off')
+
+    plt.tight_layout()
+    plt.savefig(f'output_part2/harris_corner_{name}.jpg', bbox_inches='tight')
+    plt.show()
+
+def visualize_feature_descriptors(descriptors, num_features=64, name="", use_colormap=True):
+    num_features = min(num_features, descriptors.shape[0])
+    indices = np.arange(num_features)
+
+    cols = 8
+    rows = int(np.ceil(num_features / cols))
+
+    fig = plt.figure(figsize=(16, 2 * rows))
+    
+    for idx, i in enumerate(indices):
+        ax = plt.subplot(rows, cols, idx + 1)
+        descriptor_patch = descriptors[i].reshape(8, 8)
+        
+        cmap = 'hot' if use_colormap else 'gray'
+        
+        ax.imshow(descriptor_patch, cmap=cmap, interpolation='nearest')
+        
+        ax.set_title(f'Feature {i+1}', fontsize=8)
+        ax.axis('off')
+    
+    plt.suptitle(f'Feature Descriptors ({name})', fontsize=14, y=0.99)
+    plt.tight_layout()
+    plt.savefig(f'output_part2/feature_descriptor_{name}.jpg', 
+               bbox_inches='tight', dpi=200)
+    plt.show()
+
+def visualize_matches(im1, im2, coords1, coords2, name=""):
+    h1, w1 = im1.shape[:2]
+    h2, w2 = im2.shape[:2]
+
+    # combine images side-by-side
+    H = max(h1, h2)
+    combined = np.ones((H, w1 + w2, 3), dtype=np.uint8) * 255
+    combined[:h1, :w1, :] = im1
+    combined[:h2, w1:w1 + w2, :] = im2
+    
+    coords2_shifted = coords2.copy()
+    coords2_shifted[1, :] += w1 # add width of image 1 to shift image 2 x-coordinates
+    
+    plt.figure(figsize=(20, 10))
+    plt.imshow(combined)
+    plt.axis('off')
+
+    for i in np.linspace(0, coords1.shape[1] - 1, dtype=int):
+        y1, x1 = coords1[0, i], coords1[1, i]
+        y2, x2 = coords2_shifted[0, i], coords2_shifted[1, i]
+        
+        color = np.random.rand(3,)
+        
+        plt.plot([x1, x2], [y1, y2], '-', color=color, linewidth=1.5, alpha=0.7)
+        
+        plt.plot(x1, y1, 'o', color=color, markersize=5)
+        plt.plot(x2, y2, 'o', color=color, markersize=5)
+    
+    plt.title(f'Feature Matching ({name})', 
+             fontsize=16)
+    plt.tight_layout()
+    plt.savefig(f'output_part2/feature_matching_{name}.jpg', 
+               bbox_inches='tight', dpi=200)
+    plt.show()
+
+def visualize_inliers_outliers(im1, im2, matches, coords1, coords2, inliers, name=""):
+    h1, w1 = im1.shape[:2]
+    h2, w2 = im2.shape[:2]
+    
+    # combine images side-by-side
+    H = max(h1, h2)
+    combined = np.ones((H, w1 + w2, 3), dtype=np.uint8) * 255
+    combined[:h1, :w1, :] = im1
+    combined[:h2, w1:w1 + w2, :] = im2
+    
+    coords2_shifted = coords2.copy()
+    coords2_shifted[1, :] += w1 # add width of image 1 to shift image 2 x-coordinates
+    
+    inlier_mask = np.zeros(matches.shape[0], dtype=bool)
+    inlier_mask[inliers] = True
+    
+    plt.figure(figsize=(20, 10))
+    plt.imshow(combined)
+    plt.axis('off')
+    
+    # plot outliers
+    for i in range(matches.shape[0]):
+        if not inlier_mask[i]:
+            y1, x1 = coords1[0, matches[i, 0]], coords1[1, matches[i, 0]]
+            y2, x2 = coords2_shifted[0, matches[i, 1]], coords2_shifted[1, matches[i, 1]]
+            
+            plt.plot([x1, x2], [y1, y2], 'r-', linewidth=1, alpha=0.3)
+            plt.plot(x1, y1, 'ro', markersize=3, alpha=0.5)
+            plt.plot(x2, y2, 'ro', markersize=3, alpha=0.5)
+    
+    # plot inliers
+    for i in inliers:
+        y1, x1 = coords1[0, matches[i, 0]], coords1[1, matches[i, 0]]
+        y2, x2 = coords2_shifted[0, matches[i, 1]], coords2_shifted[1, matches[i, 1]]
+        
+        plt.plot([x1, x2], [y1, y2], 'g-', linewidth=1.5, alpha=0.7)
+        plt.plot(x1, y1, 'go', markersize=4)
+        plt.plot(x2, y2, 'go', markersize=4)
+    
+    n_inliers = len(inliers)
+    n_outliers = matches.shape[0] - n_inliers
+    plt.title(f'RANSAC Results ({name})\n{n_inliers} Inliers, {n_outliers} Outliers', 
+             fontsize=16)
+    plt.tight_layout()
+    plt.savefig(f'output_part2/ransac_{name}.jpg', 
+               bbox_inches='tight', dpi=150)
+    plt.show()
+
+def visualize_auto_mosaic(im1, im2, H, name=""):
+    # warp image 1 to image 2 coordinates
+    im1_warped, alpha1, offset1 = warpImageBilinear(im1, H)
+    
+    im2_alpha = np.ones((im2.shape[0], im2.shape[1]), dtype=np.float32)
+    im2_offset = (0, 0)
+    
+    # Blend images
+    mosaic, _ = blendImages(im1_warped, alpha1, offset1, im2, im2_alpha, im2_offset)
+
+    print(f"Auto mosaic {name}: {mosaic.shape}")
+
+    fig, axes = plt.subplots(1, 3, figsize=(20, 7))
+    
+    axes[0].imshow(im1)
+    axes[0].set_title("Image 1", fontsize=14)
+    axes[0].axis('off')
+    
+    axes[1].imshow(im2)
+    axes[1].set_title("Image 2", fontsize=14)
+    axes[1].axis('off')
+    
+    axes[2].imshow(mosaic)
+    axes[2].set_title("Warped (Auto)", fontsize=14)
+    axes[2].axis('off')
+
+    save_image(mosaic, f'output_part2/{name}.jpg')
+
+    plt.tight_layout()
+    plt.savefig(f'output_part2/mosaic_auto_{name}.jpg', bbox_inches='tight', dpi=200)
+    plt.show()
+
 if __name__ == "__main__":
     # A.1: LOAD IMAGES
-    IM1_NAME = "data/garage1.jpeg"
-    IM2_NAME = "data/garage2.jpeg"
+    IM1_NAME = "data/path1_downsized.jpeg"
+    IM2_NAME = "data/path2_downsized.jpeg"
     IM_RECT_NAME = "data/window.jpeg"
 
-    NAME = "garage"
+    NAME = "path"
     RECT_NAME = "window"
     
     im1 = cv2.imread(IM1_NAME)
@@ -398,6 +716,8 @@ if __name__ == "__main__":
     print(f"Image 1 ({NAME}): {im1_rgb.shape}")
     print(f"Image 2 ({NAME}): {im2_rgb.shape}")
     print(f"Rectification image ({RECT_NAME}): {im_rect_rgb.shape}")
+
+    '''
     
     # A.2: RECOVER HOMOGRAPHIES
     # Correspondences: Image 1 -> Image 2
@@ -492,7 +812,7 @@ if __name__ == "__main__":
     
     A, b, H, h = computeH(im1_pts, im2_pts)
     
-    printSystem(A, b, H, h, "Mosaic Homography")
+    printSystem(A, b, H, h, im1_pts.shape[0], "Mosaic Homography")
     
     visualizeCorrespondences(im1_rgb, im2_rgb, im1_pts, im2_pts, "Mosaic Correspondences (Image 1 → Image 2)", name=NAME)
     
@@ -532,7 +852,7 @@ if __name__ == "__main__":
     
     A_rect, b_rect, H_rect, h_rect = computeH(rect_pts, rect_target)
     
-    printSystem(A_rect, b_rect, H_rect, h_rect, "Rectification Homography")
+    printSystem(A_rect, b_rect, H_rect, h_rect, rect_pts.shape[0], "Rectification Homography")
     
     print("Warping Rectification with Bilinear Interpolation")
     rect_warped_bil, alpha_rect_bil, offset_rect_bil = warpImageBilinear(im_rect_rgb, H_rect)
@@ -560,3 +880,7 @@ if __name__ == "__main__":
     print(f"Mosaic shape: {mosaic.shape}")
 
     visualizeMosaic(im1_rgb, im2_rgb, im1_warped_bil, mosaic, name=NAME)
+
+    '''
+
+    detectCorners(im1_rgb, im2_rgb, name=NAME)

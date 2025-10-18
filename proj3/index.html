@@ -12,6 +12,10 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+
+        html {
+            scroll-behavior: smooth;
+        }
     </style>
     <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
@@ -19,6 +23,32 @@
 </head>
 
 <body class="bg-gray-900 text-gray-200">
+    <aside id="toc"
+        class="fixed left-0 top-0 h-full w-64 bg-gray-800 border-r border-gray-700 overflow-y-auto hidden md:block">
+        <div class="p-6">
+            <h2 class="text-lg font-semibold text-white mb-4">Contents</h2>
+            <nav class="space-y-2">
+                <a href="#overview" class="block text-gray-400 hover:text-white transition-colors">Overview</a>
+                <a href="#part-a1" class="block text-gray-400 hover:text-white transition-colors">Part A.1 – Shoot the
+                    Pictures</a>
+                <a href="#part-a2" class="block text-gray-400 hover:text-white transition-colors">Part A.2 – Recover
+                    Homographies</a>
+                <a href="#part-a3" class="block text-gray-400 hover:text-white transition-colors">Part A.3 – Warp the
+                    Images</a>
+                <a href="#part-a4" class="block text-gray-400 hover:text-white transition-colors">Part A.4 – Blend into a
+                    Mosaic</a>
+                <a href="#part-b1" class="block text-gray-400 hover:text-white transition-colors">Part B.1 – Harris &
+                    ANMS</a>
+                <a href="#part-b2" class="block text-gray-400 hover:text-white transition-colors">Part B.2 – Feature
+                    Descriptors</a>
+                <a href="#part-b3" class="block text-gray-400 hover:text-white transition-colors">Part B.3 – Feature
+                    Matching</a>
+                <a href="#part-b4" class="block text-gray-400 hover:text-white transition-colors">Part B.4 – RANSAC</a>
+            </nav>
+        </div>
+    </aside>
+    
+    <div class="md:ml-64 min-h-screen flex flex-col items-center py-12 px-4">
     <div class="min-h-screen flex flex-col items-center py-12 px-4">
         <!-- Back to Portfolio -->
         <a href="../index.html"
@@ -29,657 +59,1079 @@
         <!-- Header -->
         <header class="text-center mb-12">
             <h1 class="text-5xl md:text-6xl font-extrabold text-white mb-4">
-                Project 3A: Image Warping and Mosaicing
+                Project 3: Image Warping, Mosaicing, and Feature Matching for Autostitching
             </h1>
             <p class="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto">
-                Creating panoramic mosaics through homography computation, image warping, and multi-image blending
+                Creating panoramic mosaics through homography computation, image warping, and automatic feature detection
             </p>
         </header>
 
         <!-- Overview -->
-        <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
-            <h2 class="text-3xl font-bold text-white mb-4">Overview</h2>
-            <p class="text-gray-400 leading-relaxed mb-6">
-                This project explores the mathematics and implementation of image mosaicing - the process of stitching
-                multiple photographs
-                into seamless panoramas. I implemented homography computation from scratch, developed two interpolation
-                methods for image
-                warping (nearest neighbor and bilinear), and created distance-weighted blending for smooth transitions.
-                The techniques
-                learned enable the creation of wide-angle panoramas from overlapping photographs and rectification of
-                perspective distortions.
-            </p>
+        <section id="overview">
+            <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+                <h2 class="text-3xl font-bold text-white mb-4">Overview</h2>
+                <p class="text-gray-400 leading-relaxed mb-6">
+                    This project explores the mathematics and implementation of image mosaicing - the process of stitching
+                    multiple photographs
+                    into seamless panoramas. I implemented homography computation from scratch, developed two interpolation
+                    methods for image
+                    warping (nearest neighbor and bilinear), and created distance-weighted blending for smooth transitions.
+                    I then extended this to automatic feature detection using the Harris corner detector, adaptive non-maximal
+                    suppression (ANMS), and Lowe's algorithm for matching points across images. Finally, I implemented
+                    RANSAC to robustly estimate homographies from noisy correspondences.
+                    The techniques
+                    learned enable the creation of wide-angle panoramas from overlapping photographs and rectification of
+                    perspective distortions.
+                </p>
+            </section>
         </section>
 
-        <!-- A.1: Image Collection -->
-        <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
-            <h2 class="text-3xl font-bold text-white mb-4">Part A.1: Shoot the Pictures</h2>
-            <p class="text-gray-400 leading-relaxed mb-6">
-                I captured multiple sets of images by fixing the camera's center of projection and rotating to capture
-                different views.
-                Each set has 40-70% overlap between adjacent frames to ensure sufficient correspondence points for
-                accurate homography
-                estimation. All photos were taken with consistent exposure settings to maintain uniform brightness
-                across the mosaic.
-            </p>
+        <!-- Part A Header -->
+        <section id="part-a1">
+            <div class="w-full max-w-4xl mb-8">
+                <h1 class="text-4xl font-bold text-white-400 border-b-4 border-white-400 pb-2">Part A: Manual Mosaicing</h1>
+            </div>
 
-            <div class="mb-8">
-                <h3 class="text-xl font-bold text-white mb-4">Image Set 1: Berkeley Sunset</h3>
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div class="text-center">
-                        <img src="data/bancroft1.jpeg" alt="Building Left" class="rounded-lg shadow-lg w-full">
-                        <p class="text-gray-400 text-sm mt-2">Image 1</p>
-                    </div>
-                    <div class="text-center">
-                        <img src="data/bancroft2.jpeg" alt="Building Right" class="rounded-lg shadow-lg w-full">
-                        <p class="text-gray-400 text-sm mt-2">Image 2</p>
+            <!-- A.1: Image Collection -->
+            <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+                <h2 class="text-3xl font-bold text-white mb-4">Part A.1: Shoot the Pictures</h2>
+                <p class="text-gray-400 leading-relaxed mb-6">
+                    I captured multiple sets of images by fixing the camera's center of projection and rotating to capture
+                    different views.
+                    Each set has 40-70% overlap between adjacent frames to ensure sufficient correspondence points for
+                    accurate homography
+                    estimation. All photos were taken with consistent exposure settings to maintain uniform brightness
+                    across the mosaic.
+                </p>
+
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-white mb-4">Image Set 1: Berkeley Sunset</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="text-center">
+                            <img src="data/bancroft1.jpeg" alt="Building Left" class="rounded-lg shadow-lg w-full">
+                            <p class="text-gray-400 text-sm mt-2">Image 1</p>
+                        </div>
+                        <div class="text-center">
+                            <img src="data/bancroft2.jpeg" alt="Building Right" class="rounded-lg shadow-lg w-full">
+                            <p class="text-gray-400 text-sm mt-2">Image 2</p>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="mb-8">
-                <h3 class="text-xl font-bold text-white mb-4">Image Set 2: Garden Path</h3>
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div class="text-center">
-                        <img src="data/path1.jpeg" alt="Garden Left" class="rounded-lg shadow-lg w-full">
-                        <p class="text-gray-400 text-sm mt-2">Image 1</p>
-                    </div>
-                    <div class="text-center">
-                        <img src="data/path2.jpeg" alt="Garden Right" class="rounded-lg shadow-lg w-full">
-                        <p class="text-gray-400 text-sm mt-2">Image 2</p>
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-white mb-4">Image Set 2: Garden Path</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="text-center">
+                            <img src="data/path1.jpeg" alt="Garden Left" class="rounded-lg shadow-lg w-full">
+                            <p class="text-gray-400 text-sm mt-2">Image 1</p>
+                        </div>
+                        <div class="text-center">
+                            <img src="data/path2.jpeg" alt="Garden Right" class="rounded-lg shadow-lg w-full">
+                            <p class="text-gray-400 text-sm mt-2">Image 2</p>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="mb-8">
-                <h3 class="text-xl font-bold text-white mb-4">Image Set 3: Study Room</h3>
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div class="text-center">
-                        <img src="data/room1.jpeg" alt="Garden Left" class="rounded-lg shadow-lg w-full">
-                        <p class="text-gray-400 text-sm mt-2">Image 1</p>
-                    </div>
-                    <div class="text-center">
-                        <img src="data/room2.jpeg" alt="Garden Right" class="rounded-lg shadow-lg w-full">
-                        <p class="text-gray-400 text-sm mt-2">Image 2</p>
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-white mb-4">Image Set 3: Study Room</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="text-center">
+                            <img src="data/room1.jpeg" alt="Garden Left" class="rounded-lg shadow-lg w-full">
+                            <p class="text-gray-400 text-sm mt-2">Image 1</p>
+                        </div>
+                        <div class="text-center">
+                            <img src="data/room2.jpeg" alt="Garden Right" class="rounded-lg shadow-lg w-full">
+                            <p class="text-gray-400 text-sm mt-2">Image 2</p>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="mb-8">
-                <h3 class="text-xl font-bold text-white mb-4">Image Set 4: Haas</h3>
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div class="text-center">
-                        <img src="data/haas1.jpeg" alt="Garden Left" class="rounded-lg shadow-lg w-full">
-                        <p class="text-gray-400 text-sm mt-2">Image 1</p>
-                    </div>
-                    <div class="text-center">
-                        <img src="data/haas2.jpeg" alt="Garden Right" class="rounded-lg shadow-lg w-full">
-                        <p class="text-gray-400 text-sm mt-2">Image 2</p>
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-white mb-4">Image Set 4: Haas</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="text-center">
+                            <img src="data/haas1.jpeg" alt="Garden Left" class="rounded-lg shadow-lg w-full">
+                            <p class="text-gray-400 text-sm mt-2">Image 1</p>
+                        </div>
+                        <div class="text-center">
+                            <img src="data/haas2.jpeg" alt="Garden Right" class="rounded-lg shadow-lg w-full">
+                            <p class="text-gray-400 text-sm mt-2">Image 2</p>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="mb-8">
-                <h3 class="text-xl font-bold text-white mb-4">Image Set 4: Garage</h3>
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div class="text-center">
-                        <img src="data/garage1.jpeg" alt="Garden Left" class="rounded-lg shadow-lg w-full">
-                        <p class="text-gray-400 text-sm mt-2">Image 1</p>
-                    </div>
-                    <div class="text-center">
-                        <img src="data/garage2.jpeg" alt="Garden Right" class="rounded-lg shadow-lg w-full">
-                        <p class="text-gray-400 text-sm mt-2">Image 2</p>
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-white mb-4">Image Set 4: Garage</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="text-center">
+                            <img src="data/garage1.jpeg" alt="Garden Left" class="rounded-lg shadow-lg w-full">
+                            <p class="text-gray-400 text-sm mt-2">Image 1</p>
+                        </div>
+                        <div class="text-center">
+                            <img src="data/garage2.jpeg" alt="Garden Right" class="rounded-lg shadow-lg w-full">
+                            <p class="text-gray-400 text-sm mt-2">Image 2</p>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="bg-gray-700 p-6 rounded-lg">
-                <h3 class="text-lg font-bold text-white mb-3">Photography Guidelines</h3>
-                <ul class="list-disc list-inside text-gray-400 space-y-2">
-                    <li><strong>Fixed center of projection:</strong> Camera rotates but doesn't translate</li>
-                    <li><strong>Significant overlap:</strong> 40-70% overlap ensures sufficient correspondence points</li>
-                    <li><strong>Consistent time:</strong> Images were shot as close together as possible, with minimal movement in vehicles to ensure accurate correspondence</li>
-                </ul>
-            </div>
+                <div class="bg-gray-700 p-6 rounded-lg">
+                    <h3 class="text-lg font-bold text-white mb-3">Photography Guidelines</h3>
+                    <ul class="list-disc list-inside text-gray-400 space-y-2">
+                        <li><strong>Fixed center of projection:</strong> Camera rotates but doesn't translate</li>
+                        <li><strong>Significant overlap:</strong> 40-70% overlap ensures sufficient correspondence points</li>
+                        <li><strong>Consistent time:</strong> Images were shot as close together as possible, with minimal movement in vehicles to ensure accurate correspondence</li>
+                    </ul>
+                </div>
+            </section>
         </section>
 
         <!-- A.2: Homography Recovery -->
-        <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
-            <h2 class="text-3xl font-bold text-white mb-4">Part A.2: Recover Homographies</h2>
-            <p class="text-gray-400 leading-relaxed mb-6">
-                A homography H is a 3×3 matrix that maps points from one image to another: p' = Hp. I used 10-15 correspondences to create
-                an overdetermined system and solve using least-squares.
-            </p>
-
-            <div class="bg-gray-900 p-4 rounded-lg mb-6">
-                <h3 class="text-lg font-bold text-white mb-3">Mathematical Formulation</h3>
-                <div class="text-gray-400 text-sm leading-relaxed">
-                    <p class="mb-3">I create a linear system Ah = b where:</p>
-                    <p class="mb-2">• A is 2n × 8 (n point correspondences)</p>
-                    <p class="mb-2">• h = [h₁, h₂, h₃, h₄, h₅, h₆, h₇, h₈]ᵀ</p>
-                    <p>• b alternates x' and y' coordinates: [x₁', y₁', x₂', y₂', ...]</p>
-                </div>
-            </div>
-
-            <div class="bg-gray-900 p-4 rounded-lg mb-6 max-h-[32rem] overflow-y-auto">
-                <h3 class="text-lg font-bold text-white mb-3">Implementation</h3>
-                <pre class="text-xs overflow-x-auto"><code class="language-python">def computeH(im1_pts, im2_pts):
-    '''
-    im1_pts, im2_pts are nx2 matrices
-    '''
-    n = im1_pts.shape[0]
-    
-    A = []
-    for i in range(n):
-    x1, y1 = im1_pts[i]
-    x2, y2 = im2_pts[i]
-    A.append([x1, y1, 1, 0, 0, 0, -x1*x2, -y1*x2])
-    A.append([0, 0, 0, x1, y1, 1, -x1*y2, -y1*y2])
-    
-    A = np.array(A)
-    
-    b = np.empty(2*n, dtype=np.float64)
-    b[0::2] = im2_pts[:, 0] # x'
-    b[1::2] = im2_pts[:, 1] # y'
-    
-    h, residuals, rank, s = np.linalg.lstsq(A, b, rcond=None)
-    H = np.vstack([h.reshape(8, 1), 1]).reshape(3, 3)
-    
-    return A, b, H, h</code></pre>
-            </div>
-
-            <div class="mb-8">
-                <h3 class="text-xl font-bold text-white mb-4">Point Correspondences Visualization</h3>
-                <p class="text-gray-400 text-sm">
-                    Matching points between Image 1 and Image 2 are shown with colored lines. I manually selected correspondences on
-                    features that are clearly visible in both images (corners, distinct objects, etc.). Full matrices are in the README.
+        <section id="part-a2">
+            <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+                <h2 class="text-3xl font-bold text-white mb-4">Part A.2: Recover Homographies</h2>
+                <p class="text-gray-400 leading-relaxed mb-6">
+                    A homography H is a 3×3 matrix that maps points from one image to another: p' = Hp. I used 10-15 correspondences to create
+                    an overdetermined system and solve using least-squares.
                 </p>
-            </div>
-            
-            <div class="mb-8 flex flex-col items-center">
-                <h3 class="text-center text-lg font-bold text-white mb-3">Recovered Homography Matrix (Berkeley Sunset)</h3>
-                <img src="output/correspondence_bancroft.jpg" alt="Point Correspondences"
-                    class="rounded-lg shadow-lg w-full max-w-2xl mb-4">
-            </div>
-            
-            <div class="mb-8 bg-gray-700 p-6 rounded-lg">
-                <pre class="text-xs font-mono text-gray-300 overflow-x-auto">
-                    System of equations for 16 point correspondences: Ah = b
-                    
-                    Matrix A (32 × 8):
-                    [[ 1333 1882 1 0 0 0 -1043739 -1473606]
-                    [ 0 0 0 1333 1882 1 -2511372 -3545688]
-                    ...
-                    [ 918 2829 1 0 0 0 -300186 -925083]
-                    [ 0 0 0 918 2829 1 -2654856 -8181468]]
-                    
-                    Vector b (32 × 1):
-                    [783. 1884. 665. 3782. ... 586. 3143. 327. 2892.]
-                    
-                    Vector h (8 x 1):
-                    [1.22e+00 -1.98e-03 -7.63e+02 1.50e-01 1.13e+00 -2.61e+02 7.43e-05 -6.72e-07]
-                    
-                    Recovered Homography Matrix H (3 x 3):
-                    [[1.22e+00 -1.98e-03 -7.63e+02]
-                    [1.50e-01 1.13e+00 -2.61e+02]
-                    [7.43e-05 -6.72e-07 1.00e+00]]
-                </pre>
-            </div>
-            
-            <div class="mb-8 flex flex-col items-center">
-                <h3 class="text-center text-lg font-bold text-white mb-3">Recovered Homography Matrix (Garden Path)</h3>
-                <img src="output/correspondence_path.jpg" alt="Point Correspondences"
-                    class="rounded-lg shadow-lg w-full max-w-2xl mb-4">
-            </div>
 
-            <div class="mb-8 bg-gray-700 p-6 rounded-lg">
+                <div class="bg-gray-900 p-4 rounded-lg mb-6">
+                    <h3 class="text-lg font-bold text-white mb-3">Mathematical Formulation</h3>
+                    <div class="text-gray-400 text-sm leading-relaxed">
+                        <p class="mb-3">I create a linear system Ah = b where:</p>
+                        <p class="mb-2">• A is 2n × 8 (n point correspondences)</p>
+                        <p class="mb-2">• h = [h₁, h₂, h₃, h₄, h₅, h₆, h₇, h₈]ᵀ</p>
+                        <p>• b alternates x' and y' coordinates: [x₁', y₁', x₂', y₂', ...]</p>
+                    </div>
+                </div>
+
+                <div class="bg-gray-900 p-4 rounded-lg mb-6 max-h-[32rem] overflow-y-auto">
+                    <h3 class="text-lg font-bold text-white mb-3">Implementation</h3>
+                    <pre class="text-xs overflow-x-auto"><code class="language-python">def computeH(im1_pts, im2_pts):
+        '''
+        im1_pts, im2_pts are nx2 matrices
+        '''
+        n = im1_pts.shape[0]
+        
+        A = []
+        for i in range(n):
+        x1, y1 = im1_pts[i]
+        x2, y2 = im2_pts[i]
+        A.append([x1, y1, 1, 0, 0, 0, -x1*x2, -y1*x2])
+        A.append([0, 0, 0, x1, y1, 1, -x1*y2, -y1*y2])
+        
+        A = np.array(A)
+        
+        b = np.empty(2*n, dtype=np.float64)
+        b[0::2] = im2_pts[:, 0] # x'
+        b[1::2] = im2_pts[:, 1] # y'
+        
+        h, residuals, rank, s = np.linalg.lstsq(A, b, rcond=None)
+        H = np.vstack([h.reshape(8, 1), 1]).reshape(3, 3)
+        
+        return A, b, H, h</code></pre>
+                </div>
+
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-white mb-4">Point Correspondences Visualization</h3>
+                    <p class="text-gray-400 text-sm">
+                        Matching points between Image 1 and Image 2 are shown with colored lines. I manually selected correspondences on
+                        features that are clearly visible in both images (corners, distinct objects, etc.). Full matrices are in the README.
+                    </p>
+                </div>
                 
-                <pre class="text-xs font-mono text-gray-300 overflow-x-auto">
-                    System of equations for 9 point correspondences: Ah = b
-                    
-                    Matrix A (18 × 8):
-                    [[ 1543 2833 1 0 0 0 -649603 -1192693]
-                    [ 0 0 0 1543 2833 1 -4636715 -8513165]
-                    ...
-                    [ 4023 3137 1 0 0 0 -12233943 -9539617]
-                    [ 0 0 0 4023 3137 1 -12950037 -10098003]]
-                    
-                    Vector b (18 × 1):
-                    [421 1759 921 1065 ... 2885 3219]
-                    
-                    Vector h (8 × 1):
-                    [7.02e-01 3.90e-01 1.06e+02 9.33e-02 1.07e+00 3.92e+02 3.46e-05 1.37e-04]
-                    
-                    Recovered Homography Matrix H (3 × 3):
-                    [[7.02e-01 3.90e-01 1.06e+02]
-                    [9.33e-02 1.07e+00 3.92e+02]
-                    [3.46e-05 1.37e-04 1.00e+00]]
-                </pre>
-            </div>
+                <div class="mb-8 flex flex-col items-center">
+                    <h3 class="text-center text-lg font-bold text-white mb-3">Recovered Homography Matrix (Berkeley Sunset)</h3>
+                    <img src="output/correspondence_bancroft.jpg" alt="Point Correspondences"
+                        class="rounded-lg shadow-lg w-full max-w-2xl mb-4">
+                </div>
+                
+                <div class="mb-8 bg-gray-700 p-6 rounded-lg">
+                    <pre class="text-xs font-mono text-gray-300 overflow-x-auto">
+                        System of equations for 16 point correspondences: Ah = b
+                        
+                        Matrix A (32 × 8):
+                        [[ 1333 1882 1 0 0 0 -1043739 -1473606]
+                        [ 0 0 0 1333 1882 1 -2511372 -3545688]
+                        ...
+                        [ 918 2829 1 0 0 0 -300186 -925083]
+                        [ 0 0 0 918 2829 1 -2654856 -8181468]]
+                        
+                        Vector b (32 × 1):
+                        [783. 1884. 665. 3782. ... 586. 3143. 327. 2892.]
+                        
+                        Vector h (8 x 1):
+                        [1.22e+00 -1.98e-03 -7.63e+02 1.50e-01 1.13e+00 -2.61e+02 7.43e-05 -6.72e-07]
+                        
+                        Recovered Homography Matrix H (3 x 3):
+                        [[1.22e+00 -1.98e-03 -7.63e+02]
+                        [1.50e-01 1.13e+00 -2.61e+02]
+                        [7.43e-05 -6.72e-07 1.00e+00]]
+                    </pre>
+                </div>
+                
+                <div class="mb-8 flex flex-col items-center">
+                    <h3 class="text-center text-lg font-bold text-white mb-3">Recovered Homography Matrix (Garden Path)</h3>
+                    <img src="output/correspondence_path.jpg" alt="Point Correspondences"
+                        class="rounded-lg shadow-lg w-full max-w-2xl mb-4">
+                </div>
 
-            <div class="mb-8 flex flex-col items-center">
-                <h3 class="text-center text-lg font-bold text-white mb-3">Recovered Homography Matrix (Study Room)</h3>
-                <img src="output/correspondence_room.jpg" alt="Point Correspondences"
-                    class="rounded-lg shadow-lg w-full max-w-2xl mb-4">
-            </div>
-            
-            <div class="mb-8 bg-gray-700 p-6 rounded-lg">
-            
-                <pre class="text-xs font-mono text-gray-300 overflow-x-auto">
-                    System of equations for 16 point correspondences: Ah = b
+                <div class="mb-8 bg-gray-700 p-6 rounded-lg">
                     
-                    Matrix A (32 × 8):
-                    [[ 395 190 1 0 0 0 -70705 -34010]
-                    [ 0 0 0 395 190 1 -67940 -32680]
-                    ...
-                    [ 871 531 1 0 0 0 -559182 -340902]
-                    [ 0 0 0 871 531 1 -459017 -279837]]
-                    
-                    Vector b (32 × 1):
-                    [179. 172. 140. 485. ... 642. 527.]
-                    
-                    Vector h (8 × 1):
-                    [ 1.47 -0.07 -355.91 0.22 1.25 -121.17 0.00048 -0.00006]
-                    
-                    Recovered Homography Matrix H (3 × 3):
-                    [[ 1.47 -0.07 -355.91]
-                    [ 0.22 1.25 -121.17]
-                    [0.00048 -0.00006 1.00]]
-                </pre>
-            </div>
+                    <pre class="text-xs font-mono text-gray-300 overflow-x-auto">
+                        System of equations for 9 point correspondences: Ah = b
+                        
+                        Matrix A (18 × 8):
+                        [[ 1543 2833 1 0 0 0 -649603 -1192693]
+                        [ 0 0 0 1543 2833 1 -4636715 -8513165]
+                        ...
+                        [ 4023 3137 1 0 0 0 -12233943 -9539617]
+                        [ 0 0 0 4023 3137 1 -12950037 -10098003]]
+                        
+                        Vector b (18 × 1):
+                        [421 1759 921 1065 ... 2885 3219]
+                        
+                        Vector h (8 × 1):
+                        [7.02e-01 3.90e-01 1.06e+02 9.33e-02 1.07e+00 3.92e+02 3.46e-05 1.37e-04]
+                        
+                        Recovered Homography Matrix H (3 × 3):
+                        [[7.02e-01 3.90e-01 1.06e+02]
+                        [9.33e-02 1.07e+00 3.92e+02]
+                        [3.46e-05 1.37e-04 1.00e+00]]
+                    </pre>
+                </div>
 
-            <div class="mb-8 flex flex-col items-center">
-                <h3 class="text-center text-lg font-bold text-white mb-3">Recovered Homography Matrix (Haas)</h3>
-                <img src="output/correspondence_haas.jpg" alt="Point Correspondences"
-                    class="rounded-lg shadow-lg w-full max-w-2xl mb-4">
-            </div>
-            
-            <div class="mb-8 bg-gray-700 p-6 rounded-lg">
-            
-                <pre class="text-xs font-mono text-gray-300 overflow-x-auto">
-                    System of equations for 21 point correspondences: Ah = b
-                    
-                    Matrix A (42 × 8):
-                    [[ 1185 343 1 0 0 0 -21330 -6174]
-                    [ 0 0 0 1185 343 1 -14220 -4116]
-                    ...
-                    [2806 2984 1 0 0 0 -4756170 -5057880]
-                    [ 0 0 0 2806 2984 1 -8162654 -8680456]]
-                    
-                    Vector b (42 × 1):
-                    [ 18. 12. 581. 1170. ... 1695. 2909.]
-                    
-                    Vector h (8 × 1):
-                    [ 1.65 -0.09 -1897.16 0.31 1.39 -843.82 0.00016 -0.0000016]
-                    
-                    Recovered Homography Matrix H (3 × 3):
-                    [[ 1.65 -0.09 -1897.16]
-                    [ 0.31 1.39 -843.82]
-                    [0.00016 -0.0000016 1.00]]
-                </pre>
-            </div>
+                <div class="mb-8 flex flex-col items-center">
+                    <h3 class="text-center text-lg font-bold text-white mb-3">Recovered Homography Matrix (Study Room)</h3>
+                    <img src="output/correspondence_room.jpg" alt="Point Correspondences"
+                        class="rounded-lg shadow-lg w-full max-w-2xl mb-4">
+                </div>
+                
+                <div class="mb-8 bg-gray-700 p-6 rounded-lg">
+                
+                    <pre class="text-xs font-mono text-gray-300 overflow-x-auto">
+                        System of equations for 16 point correspondences: Ah = b
+                        
+                        Matrix A (32 × 8):
+                        [[ 395 190 1 0 0 0 -70705 -34010]
+                        [ 0 0 0 395 190 1 -67940 -32680]
+                        ...
+                        [ 871 531 1 0 0 0 -559182 -340902]
+                        [ 0 0 0 871 531 1 -459017 -279837]]
+                        
+                        Vector b (32 × 1):
+                        [179. 172. 140. 485. ... 642. 527.]
+                        
+                        Vector h (8 × 1):
+                        [ 1.47 -0.07 -355.91 0.22 1.25 -121.17 0.00048 -0.00006]
+                        
+                        Recovered Homography Matrix H (3 × 3):
+                        [[ 1.47 -0.07 -355.91]
+                        [ 0.22 1.25 -121.17]
+                        [0.00048 -0.00006 1.00]]
+                    </pre>
+                </div>
 
-            <div class="mb-8 flex flex-col items-center">
-                <h3 class="text-center text-lg font-bold text-white mb-3">Recovered Homography Matrix (Garage)</h3>
-                <img src="output/correspondence_garage.jpg" alt="Point Correspondences"
-                    class="rounded-lg shadow-lg w-full max-w-2xl mb-4">
-            </div>
-            
-            <div class="mb-8 bg-gray-700 p-6 rounded-lg">
-            
-                <pre class="text-xs font-mono text-gray-300 overflow-x-auto">
-                    System of equations for 23 point correspondences: Ah = b
-                    
-                    Matrix A (8 × 8):
-                    [[ 2.54e+02 2.70e+01 1.00e+00 0.00e+00 0.00e+00 0.00e+00 -0.00e+00 -0.00e+00]
-                    [ 0.00e+00 0.00e+00 0.00e+00 2.54e+02 2.70e+01 1.00e+00 -0.00e+00 -0.00e+00]
-                    ...
-                    [ 2.44e+02 1.01e+03 1.00e+00 0.00e+00 0.00e+00 0.00e+00 -0.00e+00 -0.00e+00]
-                    [ 0.00e+00 0.00e+00 0.00e+00 2.44e+02 1.01e+03 1.00e+00 -3.25e+05 -1.34e+06]]
-                    
-                    Vector b (8 × 1):
-                    [ 0. 0. 999. 0. 999. 1332. 0. 1332.]
-                    
-                    Vector h (8 × 1):
-                    [ 2.51 0.03 -637.36 -0.78 1.32 163.53 -0.00040 0.00008]
-                    
-                    Recovered Homography Matrix H (3 × 3):
-                    [[ 2.51 0.03 -637.36]
-                    [-0.78 1.32 163.53]
-                    [-0.0004 0.00008 1.00]]
-                </pre>
-            </div>
+                <div class="mb-8 flex flex-col items-center">
+                    <h3 class="text-center text-lg font-bold text-white mb-3">Recovered Homography Matrix (Haas)</h3>
+                    <img src="output/correspondence_haas.jpg" alt="Point Correspondences"
+                        class="rounded-lg shadow-lg w-full max-w-2xl mb-4">
+                </div>
+                
+                <div class="mb-8 bg-gray-700 p-6 rounded-lg">
+                
+                    <pre class="text-xs font-mono text-gray-300 overflow-x-auto">
+                        System of equations for 21 point correspondences: Ah = b
+                        
+                        Matrix A (42 × 8):
+                        [[ 1185 343 1 0 0 0 -21330 -6174]
+                        [ 0 0 0 1185 343 1 -14220 -4116]
+                        ...
+                        [2806 2984 1 0 0 0 -4756170 -5057880]
+                        [ 0 0 0 2806 2984 1 -8162654 -8680456]]
+                        
+                        Vector b (42 × 1):
+                        [ 18. 12. 581. 1170. ... 1695. 2909.]
+                        
+                        Vector h (8 × 1):
+                        [ 1.65 -0.09 -1897.16 0.31 1.39 -843.82 0.00016 -0.0000016]
+                        
+                        Recovered Homography Matrix H (3 × 3):
+                        [[ 1.65 -0.09 -1897.16]
+                        [ 0.31 1.39 -843.82]
+                        [0.00016 -0.0000016 1.00]]
+                    </pre>
+                </div>
 
+                <div class="mb-8 flex flex-col items-center">
+                    <h3 class="text-center text-lg font-bold text-white mb-3">Recovered Homography Matrix (Garage)</h3>
+                    <img src="output/correspondence_garage.jpg" alt="Point Correspondences"
+                        class="rounded-lg shadow-lg w-full max-w-2xl mb-4">
+                </div>
+                
+                <div class="mb-8 bg-gray-700 p-6 rounded-lg">
+                
+                    <pre class="text-xs font-mono text-gray-300 overflow-x-auto">
+                        System of equations for 23 point correspondences: Ah = b
+                        
+                        Matrix A (8 × 8):
+                        [[ 2.54e+02 2.70e+01 1.00e+00 0.00e+00 0.00e+00 0.00e+00 -0.00e+00 -0.00e+00]
+                        [ 0.00e+00 0.00e+00 0.00e+00 2.54e+02 2.70e+01 1.00e+00 -0.00e+00 -0.00e+00]
+                        ...
+                        [ 2.44e+02 1.01e+03 1.00e+00 0.00e+00 0.00e+00 0.00e+00 -0.00e+00 -0.00e+00]
+                        [ 0.00e+00 0.00e+00 0.00e+00 2.44e+02 1.01e+03 1.00e+00 -3.25e+05 -1.34e+06]]
+                        
+                        Vector b (8 × 1):
+                        [ 0. 0. 999. 0. 999. 1332. 0. 1332.]
+                        
+                        Vector h (8 × 1):
+                        [ 2.51 0.03 -637.36 -0.78 1.32 163.53 -0.00040 0.00008]
+                        
+                        Recovered Homography Matrix H (3 × 3):
+                        [[ 2.51 0.03 -637.36]
+                        [-0.78 1.32 163.53]
+                        [-0.0004 0.00008 1.00]]
+                    </pre>
+                </div>
+
+            </section>
         </section>
 
         <!-- A.3: Image Warping -->
-        <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
-            <h2 class="text-3xl font-bold text-white mb-4">Part A.3: Warp the Images</h2>
-            <p class="text-gray-400 leading-relaxed mb-6">
-                I implemented inverse warping to avoid holes in the output. For each output pixel, I compute its source
-                location
-                using H⁻¹, then interpolate the pixel value. Two interpolation methods were implemented from scratch:
-            </p>
+        <section id="part-a3">
+            <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+                <h2 class="text-3xl font-bold text-white mb-4">Part A.3: Warp the Images</h2>
+                <p class="text-gray-400 leading-relaxed mb-6">
+                    I implemented inverse warping to avoid holes in the output. For each output pixel, I compute its source
+                    location
+                    using H⁻¹, then interpolate the pixel value. Two interpolation methods were implemented from scratch:
+                </p>
 
-            <div class="grid md:grid-cols-2 gap-6 mb-8">
-                <div class="bg-gray-700 p-6 rounded-lg mt-6">
-                    <h3 class="text-lg font-bold text-white mb-3">Nearest Neighbor</h3>
-                    <ul class="list-disc list-inside text-gray-400 space-y-2 text-sm">
-                        Nearest neighbor interpolation works by rounding the source coordinates to the nearest integer pixel
-                        location. It then copies the exact pixel value from this closest position to the output image.
-                        This method is very fast and simple to implement, making it efficient for real-time
-                        applications. However, it produces visible aliasing effects because it does not
-                        perform any smoothing or blending of pixel values.
-                    </ul>
+                <div class="grid md:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-gray-700 p-6 rounded-lg mt-6">
+                        <h3 class="text-lg font-bold text-white mb-3">Nearest Neighbor</h3>
+                        <ul class="list-disc list-inside text-gray-400 space-y-2 text-sm">
+                            Nearest neighbor interpolation works by rounding the source coordinates to the nearest integer pixel
+                            location. It then copies the exact pixel value from this closest position to the output image.
+                            This method is very fast and simple to implement, making it efficient for real-time
+                            applications. However, it produces visible aliasing effects because it does not
+                            perform any smoothing or blending of pixel values.
+                        </ul>
+                    </div>
+                    
+                    <div class="bg-gray-700 p-6 rounded-lg mt-6">
+                        <h3 class="text-lg font-bold text-white mb-3">Bilinear Interpolation</h3>
+                        <ul class="list-disc list-inside text-gray-400 space-y-2 text-sm">
+                            Bilinear interpolation calculates the output pixel value as a weighted average of the four nearest pixels
+                            surrounding the mapped source coordinate. The weights depend on the fractional distance between the source coordinate and these neighboring pixels,
+                            allowing smooth transitions. This ends up producing smoother, anti-aliased images, resulting in
+                            better visual quality. However, the computation involves indexing multiple pixels and computing a weighted sum per output pixel,
+                            making it approximately four times slower than nearest neighbor interpolation. Additionally, results may
+                            appear slightly blurred due to smoothing as shown in the garden path and haas images.
+                        </ul>
+                    </div>
                 </div>
-                
-                <div class="bg-gray-700 p-6 rounded-lg mt-6">
-                    <h3 class="text-lg font-bold text-white mb-3">Bilinear Interpolation</h3>
-                    <ul class="list-disc list-inside text-gray-400 space-y-2 text-sm">
-                        Bilinear interpolation calculates the output pixel value as a weighted average of the four nearest pixels
-                        surrounding the mapped source coordinate. The weights depend on the fractional distance between the source coordinate and these neighboring pixels,
-                        allowing smooth transitions. This ends up producing smoother, anti-aliased images, resulting in
-                        better visual quality. However, the computation involves indexing multiple pixels and computing a weighted sum per output pixel,
-                        making it approximately four times slower than nearest neighbor interpolation. Additionally, results may
-                        appear slightly blurred due to smoothing as shown in the garden path and haas images.
-                    </ul>
-                </div>
-            </div>
 
-            <div class="bg-gray-900 p-4 rounded-lg mb-6 max-h-[32rem] overflow-y-auto">
-                <h3 class="text-lg font-bold text-white mb-3">Inverse Warping Implementation</h3>
-                <pre class="text-xs overflow-x-auto"><code class="language-python">
-def warpImageNearestNeighbor(im, H):
-    h, w = im.shape[:2]
-    color = len(im.shape) == 3
-    
-    x_min, x_max, y_min, y_max = computeBounds(im, H)
-    
-    # output dimensions
-    out_w = int(np.ceil(x_max - x_min))
-    out_h = int(np.ceil(y_max - y_min))
-    
-    if color:
-        warped = np.zeros((out_h, out_w, im.shape[2]), dtype=im.dtype)
-    else:
-        warped = np.zeros((out_h, out_w), dtype=im.dtype)
-    
-    alpha = np.zeros((out_h, out_w), dtype=np.float32)
-    
-    H_inv = np.linalg.inv(H)
-    
-    # offset
-    x_out, y_out = np.meshgrid(np.arange(out_w), np.arange(out_h))
-    x_out_shifted = x_out + x_min
-    y_out_shifted = y_out + y_min
-    
-    ones = np.ones_like(x_out_shifted)
-    coords_out = np.stack([x_out_shifted, y_out_shifted, ones], axis=0) # 3 x out_h x out_w
+                <div class="bg-gray-900 p-4 rounded-lg mb-6 max-h-[32rem] overflow-y-auto">
+                    <h3 class="text-lg font-bold text-white mb-3">Inverse Warping Implementation</h3>
+                    <pre class="text-xs overflow-x-auto"><code class="language-python">
+    def warpImageNearestNeighbor(im, H):
+        h, w = im.shape[:2]
+        color = len(im.shape) == 3
+        
+        x_min, x_max, y_min, y_max = computeBounds(im, H)
+        
+        # output dimensions
+        out_w = int(np.ceil(x_max - x_min))
+        out_h = int(np.ceil(y_max - y_min))
+        
+        if color:
+            warped = np.zeros((out_h, out_w, im.shape[2]), dtype=im.dtype)
+        else:
+            warped = np.zeros((out_h, out_w), dtype=im.dtype)
+        
+        alpha = np.zeros((out_h, out_w), dtype=np.float32)
+        
+        H_inv = np.linalg.inv(H)
+        
+        # offset
+        x_out, y_out = np.meshgrid(np.arange(out_w), np.arange(out_h))
+        x_out_shifted = x_out + x_min
+        y_out_shifted = y_out + y_min
+        
+        ones = np.ones_like(x_out_shifted)
+        coords_out = np.stack([x_out_shifted, y_out_shifted, ones], axis=0) # 3 x out_h x out_w
 
-    # flatten
-    coords_out = coords_out.reshape(3, -1) # 3 x (out_h * out_w)
-    
-    coords_in = H_inv @ coords_out # 3 x (out_h * out_w)
-    coords_in = coords_in / coords_in[2, :]
-    
-    x_in = coords_in[0, :].reshape(out_h, out_w)
-    y_in = coords_in[1, :].reshape(out_h, out_w)
-    
-    # compute NN
-    x_in_nn = np.round(x_in).astype(int)
-    y_in_nn = np.round(y_in).astype(int)
-    
-    valid = (x_in_nn >= 0) & (x_in_nn < w) & (y_in_nn >= 0) & (y_in_nn < h)
-    
-    if color:
-        for c in range(im.shape[2]):
-            warped[:, :, c][valid] = im[y_in_nn[valid], x_in_nn[valid], c]
-    else:
-        warped[valid] = im[y_in_nn[valid], x_in_nn[valid]]
-    
-    alpha[valid] = 1.0 # 1 if pixel is non-zero, else 0
-    
-    offset = (x_min, y_min)
-    return warped, alpha, offset
+        # flatten
+        coords_out = coords_out.reshape(3, -1) # 3 x (out_h * out_w)
+        
+        coords_in = H_inv @ coords_out # 3 x (out_h * out_w)
+        coords_in = coords_in / coords_in[2, :]
+        
+        x_in = coords_in[0, :].reshape(out_h, out_w)
+        y_in = coords_in[1, :].reshape(out_h, out_w)
+        
+        # compute NN
+        x_in_nn = np.round(x_in).astype(int)
+        y_in_nn = np.round(y_in).astype(int)
+        
+        valid = (x_in_nn >= 0) & (x_in_nn < w) & (y_in_nn >= 0) & (y_in_nn < h)
+        
+        if color:
+            for c in range(im.shape[2]):
+                warped[:, :, c][valid] = im[y_in_nn[valid], x_in_nn[valid], c]
+        else:
+            warped[valid] = im[y_in_nn[valid], x_in_nn[valid]]
+        
+        alpha[valid] = 1.0 # 1 if pixel is non-zero, else 0
+        
+        offset = (x_min, y_min)
+        return warped, alpha, offset
 
-def warpImageBilinear(im, H):
-    h, w = im.shape[:2]
-    color = len(im.shape) == 3
-    
-    x_min, x_max, y_min, y_max = computeBounds(im, H)
-    
-    # output dimensions
-    out_w = int(np.ceil(x_max - x_min))
-    out_h = int(np.ceil(y_max - y_min))
-    
-    if color:
-        warped = np.zeros((out_h, out_w, im.shape[2]), dtype=im.dtype)
-    else:
-        warped = np.zeros((out_h, out_w), dtype=im.dtype)
-    
-    alpha = np.zeros((out_h, out_w), dtype=im.dtype)
-    
-    H_inv = np.linalg.inv(H)
-    
-    # offset
-    x_out, y_out = np.meshgrid(np.arange(out_w), np.arange(out_h))
-    x_out_shifted = x_out + x_min
-    y_out_shifted = y_out + y_min
-    
-    ones = np.ones_like(x_out_shifted)
-    coords_out = np.stack([x_out_shifted, y_out_shifted, ones], axis=0) # 3 x out_h x out_w
+    def warpImageBilinear(im, H):
+        h, w = im.shape[:2]
+        color = len(im.shape) == 3
+        
+        x_min, x_max, y_min, y_max = computeBounds(im, H)
+        
+        # output dimensions
+        out_w = int(np.ceil(x_max - x_min))
+        out_h = int(np.ceil(y_max - y_min))
+        
+        if color:
+            warped = np.zeros((out_h, out_w, im.shape[2]), dtype=im.dtype)
+        else:
+            warped = np.zeros((out_h, out_w), dtype=im.dtype)
+        
+        alpha = np.zeros((out_h, out_w), dtype=im.dtype)
+        
+        H_inv = np.linalg.inv(H)
+        
+        # offset
+        x_out, y_out = np.meshgrid(np.arange(out_w), np.arange(out_h))
+        x_out_shifted = x_out + x_min
+        y_out_shifted = y_out + y_min
+        
+        ones = np.ones_like(x_out_shifted)
+        coords_out = np.stack([x_out_shifted, y_out_shifted, ones], axis=0) # 3 x out_h x out_w
 
-    # flatten
-    coords_out = coords_out.reshape(3, -1) # 3 x (out_h * out_w)
-    
-    coords_in = H_inv @ coords_out # 3 x (out_h * out_w)
-    coords_in = coords_in / coords_in[2, :]
-    
-    x_in = coords_in[0, :].reshape(out_h, out_w)
-    y_in = coords_in[1, :].reshape(out_h, out_w)
-    
-    # bilinear interpolation
-    x_floor = np.floor(x_in).astype(int)
-    y_floor = np.floor(y_in).astype(int)
-    x_ceil = x_floor + 1
-    y_ceil = y_floor + 1
-    
-    dx = x_in - x_floor
-    dy = y_in - y_floor
-    valid = (x_floor >= 0) & (x_ceil < w) & (y_floor >= 0) & (y_ceil < h)
-    
-    # calculate weights based on distance
-    w_tl = (1 - dx) * (1 - dy)
-    w_tr = dx * (1 - dy)
-    w_bl = (1 - dx) * dy
-    w_br = dx * dy
-    
-    if color:
-        for c in range(im.shape[2]):
-            warped[:, :, c][valid] = (
-                w_tl[valid] * im[y_floor[valid], x_floor[valid], c] +
-                w_tr[valid] * im[y_floor[valid], x_ceil[valid], c] +
-                w_bl[valid] * im[y_ceil[valid], x_floor[valid], c] +
-                w_br[valid] * im[y_ceil[valid], x_ceil[valid], c]
+        # flatten
+        coords_out = coords_out.reshape(3, -1) # 3 x (out_h * out_w)
+        
+        coords_in = H_inv @ coords_out # 3 x (out_h * out_w)
+        coords_in = coords_in / coords_in[2, :]
+        
+        x_in = coords_in[0, :].reshape(out_h, out_w)
+        y_in = coords_in[1, :].reshape(out_h, out_w)
+        
+        # bilinear interpolation
+        x_floor = np.floor(x_in).astype(int)
+        y_floor = np.floor(y_in).astype(int)
+        x_ceil = x_floor + 1
+        y_ceil = y_floor + 1
+        
+        dx = x_in - x_floor
+        dy = y_in - y_floor
+        valid = (x_floor >= 0) & (x_ceil < w) & (y_floor >= 0) & (y_ceil < h)
+        
+        # calculate weights based on distance
+        w_tl = (1 - dx) * (1 - dy)
+        w_tr = dx * (1 - dy)
+        w_bl = (1 - dx) * dy
+        w_br = dx * dy
+        
+        if color:
+            for c in range(im.shape[2]):
+                warped[:, :, c][valid] = (
+                    w_tl[valid] * im[y_floor[valid], x_floor[valid], c] +
+                    w_tr[valid] * im[y_floor[valid], x_ceil[valid], c] +
+                    w_bl[valid] * im[y_ceil[valid], x_floor[valid], c] +
+                    w_br[valid] * im[y_ceil[valid], x_ceil[valid], c]
+                )
+        else:
+            warped[valid] = (
+                w_tl[valid] * im[y_floor[valid], x_floor[valid]] +
+                w_tr[valid] * im[y_floor[valid], x_ceil[valid]] +
+                w_bl[valid] * im[y_ceil[valid], x_floor[valid]] +
+                w_br[valid] * im[y_ceil[valid], x_ceil[valid]]
             )
-    else:
-        warped[valid] = (
-            w_tl[valid] * im[y_floor[valid], x_floor[valid]] +
-            w_tr[valid] * im[y_floor[valid], x_ceil[valid]] +
-            w_bl[valid] * im[y_ceil[valid], x_floor[valid]] +
-            w_br[valid] * im[y_ceil[valid], x_ceil[valid]]
-        )
-    
-    alpha[valid] = 1.0 # 1 if pixel is non-zero, else 0
-    
-    if im.dtype == np.uint8:
-        warped = np.clip(warped, 0, 255).astype(np.uint8)
-    
-    offset = (x_min, y_min)
-    return warped, alpha, offset
-                </code></pre>
-            </div>
+        
+        alpha[valid] = 1.0 # 1 if pixel is non-zero, else 0
+        
+        if im.dtype == np.uint8:
+            warped = np.clip(warped, 0, 255).astype(np.uint8)
+        
+        offset = (x_min, y_min)
+        return warped, alpha, offset
+                    </code></pre>
+                </div>
 
-            <div class="mb-8">
-                <h3 class="text-xl font-bold text-white mb-4">Interpolation Comparison</h3>
-                <img src="output/warping_comparison_bancroft.jpg" alt="Warping Comparison" class="rounded-lg shadow-lg w-full mb-4">
-                <img src="output/warping_comparison_path.jpg" alt="Warping Comparison" class="rounded-lg shadow-lg w-full mb-4">
-                <img src="output/warping_comparison_room.jpg" alt="Warping Comparison" class="rounded-lg shadow-lg w-full mb-4">
-                <img src="output/warping_comparison_haas.jpg" alt="Warping Comparison" class="rounded-lg shadow-lg w-full mb-4">
-                <img src="output/warping_comparison_garage.jpg" alt="Warping Comparison" class="rounded-lg shadow-lg w-full mb-4">
-                <p class="text-gray-400 text-sm">
-                    <strong>Top:</strong> Source images<br>
-                    <strong>Bottom:</strong> Image 1 warped to align with Image 2 using nearest neighbor (left) vs
-                    bilinear (right)<br>
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-white mb-4">Interpolation Comparison</h3>
+                    <img src="output/warping_comparison_bancroft.jpg" alt="Warping Comparison" class="rounded-lg shadow-lg w-full mb-4">
+                    <img src="output/warping_comparison_path.jpg" alt="Warping Comparison" class="rounded-lg shadow-lg w-full mb-4">
+                    <img src="output/warping_comparison_room.jpg" alt="Warping Comparison" class="rounded-lg shadow-lg w-full mb-4">
+                    <img src="output/warping_comparison_haas.jpg" alt="Warping Comparison" class="rounded-lg shadow-lg w-full mb-4">
+                    <img src="output/warping_comparison_garage.jpg" alt="Warping Comparison" class="rounded-lg shadow-lg w-full mb-4">
+                    <p class="text-gray-400 text-sm">
+                        <strong>Top:</strong> Source images<br>
+                        <strong>Bottom:</strong> Image 1 warped to align with Image 2 using nearest neighbor (left) vs
+                        bilinear (right)<br>
+                    </p>
+                </div>
+
+                <h3 class="text-2xl font-bold text-white mb-6 mt-12">Image Rectification</h3>
+                <p class="text-gray-400 leading-relaxed mb-6">
+                    To verify the warping implementation, I performed rectification on a tilted photo frame and a window. By defining
+                    correspondences
+                    from the frame/window's corners to a rectangle, the homography transformation "undoes" the perspective
+                    distortion.
                 </p>
-            </div>
 
-            <h3 class="text-2xl font-bold text-white mb-6 mt-12">Image Rectification</h3>
-            <p class="text-gray-400 leading-relaxed mb-6">
-                To verify the warping implementation, I performed rectification on a tilted photo frame and a window. By defining
-                correspondences
-                from the frame/window's corners to a rectangle, the homography transformation "undoes" the perspective
-                distortion.
-            </p>
+                <div class="mb-8">
+                    <img src="output/rectification.jpg" alt="Rectification" class="rounded-lg shadow-lg w-full mb-4">
+                    <p class="text-gray-400 text-sm">
+                        <strong>Left:</strong> Original image with tilted frame of Manhattan (red markers show selected corners)<br>
+                        <strong>Right:</strong> Rectified result - the frame is now a perfect rectangle<br>
+                        <br>
+                        Source points: Frame corners in original image, [173,297], [575,164], [629,793], [114,829]<br>
+                        Target points: [0,0], [749,0], [749,999], [0,999]
+                    </p>
+                </div>
 
-            <div class="mb-8">
-                <img src="output/rectification.jpg" alt="Rectification" class="rounded-lg shadow-lg w-full mb-4">
-                <p class="text-gray-400 text-sm">
-                    <strong>Left:</strong> Original image with tilted frame of Manhattan (red markers show selected corners)<br>
-                    <strong>Right:</strong> Rectified result - the frame is now a perfect rectangle<br>
-                    <br>
-                    Source points: Frame corners in original image, [173,297], [575,164], [629,793], [114,829]<br>
-                    Target points: [0,0], [749,0], [749,999], [0,999]
-                </p>
-            </div>
-
-            <div class="mb-8">
-                <img src="output/rectification_window.jpg" alt="Rectification" class="rounded-lg shadow-lg w-full mb-4">
-                <p class="text-gray-400 text-sm">
-                    <strong>Left:</strong> Original image with window from side angle (red markers show selected corners)<br>
-                    <strong>Right:</strong> Rectified result - the window is now a perfect rectangle as if you were to look directly in<br>
-                    <br>
-                    Source points: Frame corners in original image, [254,27],[566,212],[581,1074],[244,1006]<br>
-                    Target points: [0,0], [999,0], [999,1332], [0,1332]
-                </p>
-            </div>
+                <div class="mb-8">
+                    <img src="output/rectification_window.jpg" alt="Rectification" class="rounded-lg shadow-lg w-full mb-4">
+                    <p class="text-gray-400 text-sm">
+                        <strong>Left:</strong> Original image with window from side angle (red markers show selected corners)<br>
+                        <strong>Right:</strong> Rectified result - the window is now a perfect rectangle as if you were to look directly in<br>
+                        <br>
+                        Source points: Frame corners in original image, [254,27],[566,212],[581,1074],[244,1006]<br>
+                        Target points: [0,0], [999,0], [999,1332], [0,1332]
+                    </p>
+                </div>
+            </section>
         </section>
 
         <!-- A.4: Mosaic Blending -->
-        <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
-            <h2 class="text-3xl font-bold text-white mb-4">Part A.4: Blend Images into a Mosaic</h2>
-            <p class="text-gray-400 leading-relaxed mb-6">
-                I implemented distance-weighted blending using bilinear interpolation warping where each image's
-                contribution
-                is based on distance from its edges. This is recorded in the alpha mask, where pixels at the center of an image get full weight (1.0), while edges
-                get
-                progressively less weight, creating smooth transitions in overlap regions.
-            </p>
+        <section id="part-a4">
+            <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+                <h2 class="text-3xl font-bold text-white mb-4">Part A.4: Blend Images into a Mosaic</h2>
+                <p class="text-gray-400 leading-relaxed mb-6">
+                    I implemented distance-weighted blending using bilinear interpolation warping where each image's
+                    contribution
+                    is based on distance from its edges. This is recorded in the alpha mask, where pixels at the center of an image get full weight (1.0), while edges
+                    get
+                    progressively less weight, creating smooth transitions in overlap regions.
+                </p>
 
-            <div class="bg-gray-900 p-4 rounded-lg mb-6">
-                <h3 class="text-lg font-bold text-white mb-3">Blending Algorithm</h3>
-                <div class="text-gray-400 text-sm leading-relaxed">
-                    <p class="mb-2"><strong>1. Create alpha masks:</strong> Mark valid pixels (1.0) vs empty regions
-                        (0.0)</p>
-                    <p class="mb-2"><strong>2. Distance transform:</strong> Compute distance from each pixel to nearest
-                        zero- pixel (0.0)</p>
-                    <p class="mb-2"><strong>3. Normalize weights:</strong> Scale distances to [0, 1] range</p>
-                    <p class="mb-2"><strong>4. Weighted blend:</strong> Blended = (im1 × w1 + im2 × w2) / (w1 + w2)</p>
-                    <p class="mt-3">This ensures w1 + w2 = 1 everywhere, preventing brightness artifacts while smoothly
-                        transitioning between images.</p>
-                </div>
-            </div>
-
-            <div class="mb-8">
-                <h3 class="text-xl font-bold text-white mb-4">Mosaic 1: Berkeley Sunset</h3>
-                <div class="grid md:grid-cols-2 gap-6 mb-4">
-                    <div class="text-center">
-                        <img src="data/bancroft1.jpeg" alt="Image 1" class="rounded-lg shadow-lg w-full">
-                        <p class="text-gray-400 text-sm mt-2">Source Image 1</p>
-                    </div>
-                    <div class="text-center">
-                        <img src="data/bancroft2.jpeg" alt="Image 2" class="rounded-lg shadow-lg w-full">
-                        <p class="text-gray-400 text-sm mt-2">Source Image 2</p>
+                <div class="bg-gray-900 p-4 rounded-lg mb-6">
+                    <h3 class="text-lg font-bold text-white mb-3">Blending Algorithm</h3>
+                    <div class="text-gray-400 text-sm leading-relaxed">
+                        <p class="mb-2"><strong>1. Create alpha masks:</strong> Mark valid pixels (1.0) vs empty regions
+                            (0.0)</p>
+                        <p class="mb-2"><strong>2. Distance transform:</strong> Compute distance from each pixel to nearest
+                            zero- pixel (0.0)</p>
+                        <p class="mb-2"><strong>3. Normalize weights:</strong> Scale distances to [0, 1] range</p>
+                        <p class="mb-2"><strong>4. Weighted blend:</strong> Blended = (im1 × w1 + im2 × w2) / (w1 + w2)</p>
+                        <p class="mt-3">This ensures w1 + w2 = 1 everywhere, preventing brightness artifacts while smoothly
+                            transitioning between images.</p>
                     </div>
                 </div>
-                <img src="output/mosaic_bancroft.jpg" alt="Building Mosaic" class="rounded-lg shadow-lg w-full mb-4">
-                <img src="output/bancroft.jpg" alt="Building Mosaic" class="rounded-lg shadow-lg w-full mb-4">
-            </div>
 
-            <div class="mb-8">
-                <h3 class="text-xl font-bold text-white mb-4">Mosaic 2: Study Room</h3>
-                <div class="grid md:grid-cols-2 gap-6 mb-4">
-                    <div class="text-center">
-                        <img src="data/room1.jpeg" alt="Interior Source 1" class="rounded-lg shadow-lg w-full">
-                        <p class="text-gray-400 text-sm mt-2">Source Image 1</p>
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-white mb-4">Mosaic 1: Berkeley Sunset</h3>
+                    <div class="grid md:grid-cols-2 gap-6 mb-4">
+                        <div class="text-center">
+                            <img src="data/bancroft1.jpeg" alt="Image 1" class="rounded-lg shadow-lg w-full">
+                            <p class="text-gray-400 text-sm mt-2">Source Image 1</p>
+                        </div>
+                        <div class="text-center">
+                            <img src="data/bancroft2.jpeg" alt="Image 2" class="rounded-lg shadow-lg w-full">
+                            <p class="text-gray-400 text-sm mt-2">Source Image 2</p>
+                        </div>
                     </div>
-                    <div class="text-center">
-                        <img src="data/room2.jpeg" alt="Interior Source 2" class="rounded-lg shadow-lg w-full">
-                        <p class="text-gray-400 text-sm mt-2">Source Image 2</p>
-                    </div>
+                    <img src="output/mosaic_bancroft.jpg" alt="Building Mosaic" class="rounded-lg shadow-lg w-full mb-4">
+                    <img src="output/bancroft.jpg" alt="Building Mosaic" class="rounded-lg shadow-lg w-full mb-4">
                 </div>
-                <img src="output/mosaic_room.jpg" alt="Interior Mosaic" class="rounded-lg shadow-lg w-full mb-4">
-                <img src="output/room.jpg" alt="Building Mosaic" class="rounded-lg shadow-lg w-full mb-4">
-            </div>
 
-            <div class="mb-8">
-                <h3 class="text-xl font-bold text-white mb-4">Mosaic 3: Garage</h3>
-                <div class="grid md:grid-cols-2 gap-6 mb-4">
-                    <div class="text-center">
-                        <img src="data/garage1.jpeg" alt="Interior Source 1" class="rounded-lg shadow-lg w-full">
-                        <p class="text-gray-400 text-sm mt-2">Source Image 1</p>
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-white mb-4">Mosaic 2: Study Room</h3>
+                    <div class="grid md:grid-cols-2 gap-6 mb-4">
+                        <div class="text-center">
+                            <img src="data/room1.jpeg" alt="Interior Source 1" class="rounded-lg shadow-lg w-full">
+                            <p class="text-gray-400 text-sm mt-2">Source Image 1</p>
+                        </div>
+                        <div class="text-center">
+                            <img src="data/room2.jpeg" alt="Interior Source 2" class="rounded-lg shadow-lg w-full">
+                            <p class="text-gray-400 text-sm mt-2">Source Image 2</p>
+                        </div>
                     </div>
-                    <div class="text-center">
-                        <img src="data/garage2.jpeg" alt="Interior Source 2" class="rounded-lg shadow-lg w-full">
-                        <p class="text-gray-400 text-sm mt-2">Source Image 2</p>
-                    </div>
+                    <img src="output/mosaic_room.jpg" alt="Interior Mosaic" class="rounded-lg shadow-lg w-full mb-4">
+                    <img src="output/room.jpg" alt="Building Mosaic" class="rounded-lg shadow-lg w-full mb-4">
                 </div>
-                <img src="output/mosaic_garage.jpg" alt="Interior Mosaic" class="rounded-lg shadow-lg w-full mb-4">
-                <img src="output/garage.jpg" alt="Building Mosaic" class="rounded-lg shadow-lg w-full mb-4">
-            </div>
 
-            <div class="mb-8">
-                <h3 class="text-xl font-bold text-white mb-4">Mosaic 4: Garden Path</h3>
-                <div class="grid md:grid-cols-2 gap-6 mb-4">
-                    <div class="text-center">
-                        <img src="data/path1.jpeg" alt="Interior Source 1" class="rounded-lg shadow-lg w-full">
-                        <p class="text-gray-400 text-sm mt-2">Source Image 1</p>
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-white mb-4">Mosaic 3: Garage</h3>
+                    <div class="grid md:grid-cols-2 gap-6 mb-4">
+                        <div class="text-center">
+                            <img src="data/garage1.jpeg" alt="Interior Source 1" class="rounded-lg shadow-lg w-full">
+                            <p class="text-gray-400 text-sm mt-2">Source Image 1</p>
+                        </div>
+                        <div class="text-center">
+                            <img src="data/garage2.jpeg" alt="Interior Source 2" class="rounded-lg shadow-lg w-full">
+                            <p class="text-gray-400 text-sm mt-2">Source Image 2</p>
+                        </div>
                     </div>
-                    <div class="text-center">
-                        <img src="data/path2.jpeg" alt="Interior Source 2" class="rounded-lg shadow-lg w-full">
-                        <p class="text-gray-400 text-sm mt-2">Source Image 2</p>
-                    </div>
+                    <img src="output/mosaic_garage.jpg" alt="Interior Mosaic" class="rounded-lg shadow-lg w-full mb-4">
+                    <img src="output/garage.jpg" alt="Building Mosaic" class="rounded-lg shadow-lg w-full mb-4">
                 </div>
-                <img src="output/mosaic_path.jpg" alt="Interior Mosaic" class="rounded-lg shadow-lg w-full mb-4">
-                <img src="output/path.jpg" alt="Building Mosaic" class="rounded-lg shadow-lg w-full mb-4">
-            </div>
 
-            <div class="mb-8">
-                <h3 class="text-xl font-bold text-white mb-4">Mosaic 5: Haas</h3>
-                <div class="grid md:grid-cols-2 gap-6 mb-4">
-                    <div class="text-center">
-                        <img src="data/haas1.jpeg" alt="Interior Source 1" class="rounded-lg shadow-lg w-full">
-                        <p class="text-gray-400 text-sm mt-2">Source Image 1</p>
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-white mb-4">Mosaic 4: Garden Path</h3>
+                    <div class="grid md:grid-cols-2 gap-6 mb-4">
+                        <div class="text-center">
+                            <img src="data/path1.jpeg" alt="Interior Source 1" class="rounded-lg shadow-lg w-full">
+                            <p class="text-gray-400 text-sm mt-2">Source Image 1</p>
+                        </div>
+                        <div class="text-center">
+                            <img src="data/path2.jpeg" alt="Interior Source 2" class="rounded-lg shadow-lg w-full">
+                            <p class="text-gray-400 text-sm mt-2">Source Image 2</p>
+                        </div>
                     </div>
-                    <div class="text-center">
-                        <img src="data/haas2.jpeg" alt="Interior Source 2" class="rounded-lg shadow-lg w-full">
-                        <p class="text-gray-400 text-sm mt-2">Source Image 2</p>
-                    </div>
+                    <img src="output/mosaic_path.jpg" alt="Interior Mosaic" class="rounded-lg shadow-lg w-full mb-4">
+                    <img src="output/path.jpg" alt="Building Mosaic" class="rounded-lg shadow-lg w-full mb-4">
                 </div>
-                <img src="output/mosaic_haas.jpg" alt="Interior Mosaic" class="rounded-lg shadow-lg w-full mb-4">
-                <img src="output/haas.jpg" alt="Building Mosaic" class="rounded-lg shadow-lg w-full mb-4">
-            </div>
 
-            <div class="bg-gray-700 p-6 rounded-lg">
-                <h3 class="text-lg font-bold text-white mb-3">Blending Analysis</h3>
-                <p class="text-gray-400 text-sm leading-relaxed">
-                    Using this blending algorithm, pixels far from image edges usually come from only one source image, so they receive full weight from that image.
-                    Near edges, where small alignment errors or differences may occur, blending both images gradually helps to mask these
-                    imperfections.
-                    This smooth transition of weights effectively prevents visible seams between images.
-                    However, change in position, time, lighting, and parallax can still cause noticeable differences.
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-white mb-4">Mosaic 5: Haas</h3>
+                    <div class="grid md:grid-cols-2 gap-6 mb-4">
+                        <div class="text-center">
+                            <img src="data/haas1.jpeg" alt="Interior Source 1" class="rounded-lg shadow-lg w-full">
+                            <p class="text-gray-400 text-sm mt-2">Source Image 1</p>
+                        </div>
+                        <div class="text-center">
+                            <img src="data/haas2.jpeg" alt="Interior Source 2" class="rounded-lg shadow-lg w-full">
+                            <p class="text-gray-400 text-sm mt-2">Source Image 2</p>
+                        </div>
+                    </div>
+                    <img src="output/mosaic_haas.jpg" alt="Interior Mosaic" class="rounded-lg shadow-lg w-full mb-4">
+                    <img src="output/haas.jpg" alt="Building Mosaic" class="rounded-lg shadow-lg w-full mb-4">
+                </div>
+
+                <div class="bg-gray-700 p-6 rounded-lg">
+                    <h3 class="text-lg font-bold text-white mb-3">Blending Analysis</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Using this blending algorithm, pixels far from image edges usually come from only one source image, so they receive full weight from that image.
+                        Near edges, where small alignment errors or differences may occur, blending both images gradually helps to mask these
+                        imperfections.
+                        This smooth transition of weights effectively prevents visible seams between images.
+                        However, change in position, time, lighting, and parallax can still cause noticeable differences.
+                    </p>
+                </div>
+            </section>
+        </section>
+
+        <!-- Part B Header -->
+        <section id="part-b1">
+            <div class="w-full max-w-4xl mb-8">
+                <h1 class="text-4xl font-bold text-white-400 border-b-4 border-white-400 pb-2">Part B: Automatic Feature Detection & Matching</h1>
+                <p class="text-gray-400 mt-4 leading-relaxed">
+                    Part B implements automatic feature detection and matching based on the MOPS (Multi-Scale Oriented Patches) paper
+                    by Brown et al., making the mosaicing pipeline fully automatic and scalable.
                 </p>
             </div>
+
+            <!-- B.1: Harris Corner Detection & ANMS -->
+            <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+                <h2 class="text-3xl font-bold text-white mb-4">Part B.1: Harris Corner Detection & ANMS</h2>
+            
+                <h3 class="text-2xl font-bold text-white mb-4">Harris Corner Detection</h3>
+                <p class="text-gray-400 leading-relaxed mb-6">
+                    I used the Harris Interest Point Detector (Section 2 of MOPS) to find distinctive corners in each image.
+                    Harris corners are points where intensity changes significantly in all directions.
+                </p>
+
+                <div class="grid md:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <img src="output_part2/harris_corner_bancroft1.jpg" alt="Harris Corners Image 1"
+                            class="rounded-lg shadow-lg w-full mb-2">
+                        <p class="text-gray-400 text-sm text-center">Berkeley Sunset Image 1</p>
+                    </div>
+                    <div>
+                        <img src="output_part2/harris_corner_bancroft2.jpg" alt="Harris Corners Image 2"
+                            class="rounded-lg shadow-lg w-full mb-2">
+                        <p class="text-gray-400 text-sm text-center">Berkeley Sunset Image 2</p>
+                    </div>
+                </div>
+            
+                <div class="grid md:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <img src="output_part2/harris_corner_room1.jpg" alt="Harris Corners Image 1"
+                            class="rounded-lg shadow-lg w-full mb-2">
+                        <p class="text-gray-400 text-sm text-center">Study Room Image 1</p>
+                    </div>
+                    <div>
+                        <img src="output_part2/harris_corner_room2.jpg" alt="Harris Corners Image 2"
+                            class="rounded-lg shadow-lg w-full mb-2">
+                        <p class="text-gray-400 text-sm text-center">Study Room Image 2</p>
+                    </div>
+                </div>
+            
+                <h3 class="text-2xl font-bold text-white mb-4 mt-8">Adaptive Non-Maximal Suppression (ANMS)</h3>
+                <p class="text-gray-400 leading-relaxed mb-6">
+                    ANMS (Section 3 of MOPS) selects a spatially distributed subset of the strongest corners. For each corner,
+                    I compute its "suppression radius" - the minimum distance to a significantly stronger corner. Corners with
+                    larger suppression radii are more spatially isolated and thus are chosen for matching.
+                </p>
+            
+                <div class="bg-gray-900 p-4 rounded-lg mb-6">
+                    <h3 class="text-lg font-bold text-white mb-3">ANMS Algorithm</h3>
+                    <div class="text-gray-400 text-sm leading-relaxed space-y-2">
+                        <p><strong>1. Sort corners by strength</strong> (descending order)</p>
+                        <p><strong>2. For each corner i:</strong></p>
+                        <p class="ml-4">• Find minimum distance to any corner j where strength(j) > c_robust × strength(i)</p>
+                        <p class="ml-4">• c_robust = 0.9 ensures we only consider significantly stronger corners as used in the paper</p>
+                        <p><strong>3. Select top N corners</strong> with largest suppression radii</p>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <img src="output_part2/harris_corner_ANMS bancroft1.jpg" alt="ANMS Corners Image 1"
+                            class="rounded-lg shadow-lg w-full mb-2">
+                        <p class="text-gray-400 text-sm text-center">Berkeley Sunset Image 1: 500 corners after ANMS</p>
+                    </div>
+                    <div>
+                        <img src="output_part2/harris_corner_ANMS bancroft2.jpg" alt="ANMS Corners Image 2"
+                            class="rounded-lg shadow-lg w-full mb-2">
+                        <p class="text-gray-400 text-sm text-center">Berkeley Sunset Image 2: 500 corners after ANMS</p>
+                    </div>
+                </div>
+            
+                <div class="grid md:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <img src="output_part2/harris_corner_ANMS room1.jpg" alt="ANMS Corners Image 1"
+                            class="rounded-lg shadow-lg w-full mb-2">
+                        <p class="text-gray-400 text-sm text-center">Study Room Image 1: 500 corners after ANMS</p>
+                    </div>
+                    <div>
+                        <img src="output_part2/harris_corner_ANMS room2.jpg" alt="ANMS Corners Image 2"
+                            class="rounded-lg shadow-lg w-full mb-2">
+                        <p class="text-gray-400 text-sm text-center">Study Room Image 2: 500 corners after ANMS</p>
+                    </div>
+                </div>
+            </section>
+        </section> 
+        
+        <!-- B.2: Feature Descriptor Extraction -->
+        <section id="part-b2">
+            <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+                <h2 class="text-3xl font-bold text-white mb-4">Part B.2: Feature Descriptor Extraction</h2>
+                <p class="text-gray-400 leading-relaxed mb-6">
+                    For each detected corner, I extract an 8×8 feature descriptor (Section 4 of MOPS). The key insight is to
+                    sample from a larger 40×40 window at 5-pixel intervals, which provides robustness to small localization errors
+                    while capturing the essential local structure. Each descriptor is then bias/gain normalized (zero mean, unit
+                    variance)
+                    to achieve invariance to affine intensity changes.
+                </p>
+            
+                <div class="bg-gray-900 p-4 rounded-lg mb-6">
+                    <h3 class="text-lg font-bold text-white mb-3">Descriptor Extraction Algorithm</h3>
+                    <div class="text-gray-400 text-sm leading-relaxed space-y-2">
+                        <p><strong>1. Extract 40×40 window:</strong> Centered at each feature point</p>
+                        <p><strong>2. Sample at 5-pixel spacing (used in the paper):</strong> Create 8×8 grid by sampling every 5th pixel</p>
+                        <p class="ml-4">• Positions: [0, 5, 10, 15, 20, 25, 30, 35] in both x and y</p>
+                        <p class="ml-4">• This gives (8-1) × 5 = 35 pixels from center to edge</p>
+                        <p><strong>3. Flatten to 64-dimensional descriptor vector</strong></p>
+                        <p><strong>4. Normalize:</strong> desc_norm = (desc - mean(desc)) / std(desc)</p>
+                    </div>
+                </div>
+            
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-white mb-4">Extracted Descriptors: Study Room</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <img src="output_part2/feature_descriptor_room1.jpg" alt="Descriptors Image 1"
+                                class="rounded-lg shadow-lg w-full mb-2">
+                            <p class="text-gray-400 text-sm text-center">First 64 descriptors from Study Room Image 1</p>
+                        </div>
+                        <div>
+                            <img src="output_part2/feature_descriptor_room2.jpg" alt="Descriptors Image 2"
+                                class="rounded-lg shadow-lg w-full mb-2">
+                            <p class="text-gray-400 text-sm text-center">First 64 descriptors from Study Room Image 2</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-400 text-sm mt-4">
+                        Each 8×8 patch shown here represents the normalized descriptor values. White = high values (brighter than average),
+                        Black = low values (darker than average). The normalization makes descriptors invariant to lighting changes in different parts of the image.
+                    </p>
+                </div>
+            
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-white mb-4">Additional Examples</h3>
+                    <div class="grid md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <img src="output_part2/feature_descriptor_path1.jpg" alt="Garden Path Descriptors 1"
+                                class="rounded-lg shadow-lg w-full mb-2">
+                            <p class="text-gray-400 text-sm text-center">Garden Path Image 1</p>
+                        </div>
+                        <div>
+                            <img src="output_part2/feature_descriptor_path2.jpg" alt="Garden Path Descriptors 2"
+                                class="rounded-lg shadow-lg w-full mb-2">
+                            <p class="text-gray-400 text-sm text-center">Garden Path Image 2</p>
+                        </div>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <img src="output_part2/feature_descriptor_bancroft1.jpg" alt="Berkeley Sunset Descriptors 1"
+                                class="rounded-lg shadow-lg w-full mb-2">
+                            <p class="text-gray-400 text-sm text-center">Berkeley Sunset Image 1</p>
+                        </div>
+                        <div>
+                            <img src="output_part2/feature_descriptor_bancroft2.jpg" alt="Berkeley Sunset Descriptors 2"
+                                class="rounded-lg shadow-lg w-full mb-2">
+                            <p class="text-gray-400 text-sm text-center">Berkeley Sunset Image 2</p>
+                        </div>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <img src="output_part2/feature_descriptor_garage1.jpg" alt="Garage Descriptors 1"
+                                class="rounded-lg shadow-lg w-full mb-2">
+                            <p class="text-gray-400 text-sm text-center">Garage Image 1</p>
+                        </div>
+                        <div>
+                            <img src="output_part2/feature_descriptor_garage2.jpg" alt="Garage Descriptors 2"
+                                class="rounded-lg shadow-lg w-full mb-2">
+                            <p class="text-gray-400 text-sm text-center">Garage Image 2</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </section> 
+
+        <!-- B.3: Feature Matching -->
+        <section id="part-b3">
+            <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+                <h2 class="text-3xl font-bold text-white mb-4">Part B.3: Feature Matching</h2>
+                <p class="text-gray-400 leading-relaxed mb-6">
+                    To find correspondences between images, I match descriptors using Lowe's ratio test (Section 5 of MOPS).
+                </p>
+            
+                <div class="bg-gray-900 p-4 rounded-lg mb-6">
+                    <h3 class="text-lg font-bold text-white mb-3">Lowe's Ratio Test Algorithm</h3>
+                    <div class="text-gray-400 text-sm leading-relaxed space-y-2">
+                        <p><strong>For each descriptor d₁ in image 1:</strong></p>
+                        <p class="ml-4">1. Compute L2 distance to all descriptors in image 2: dist_i = ||d₁ - d₂_i||₂</p>
+                        <p class="ml-4">2. Find two nearest neighbors: d₂_nearest and d₂_second</p>
+                        <p class="ml-4">3. Compute ratio: r = dist(d₁, d₂_nearest) / dist(d₁, d₂_second_nearest)</p>
+                        <p class="ml-4">4. If r < 0.7 (selected from Figure 6(b) in paper), add to list of matches (d₁, d₂_nearest)</p>
+                                <p class="mt-3">We assume that good matches should have a clear winner (low 1-NN
+                                    distance / 2-NN distance ratio) while bad matches have similar distances to multiple candidates (higher ratio)</p>
+                    </div>
+                </div>
+            
+                <div class="mb-8">
+                    <img src="output_part2/feature_matching_bancroft.jpg" alt="Feature Matches Berkeley Sunset" class="rounded-lg shadow-lg w-full mb-2">
+                    <p class="text-gray-400 text-sm text-center mb-4">Berkeley Sunset Matches</p>
+
+                    <img src="output_part2/feature_matching_room.jpg" alt="Feature Matches Study Room" class="rounded-lg shadow-lg w-full mb-2">
+                    <p class="text-gray-400 text-sm text-center mb-4">Study Room Matches</p>
+
+                    <img src="output_part2/feature_matching_path.jpg" alt="Matches Garden Path" class="rounded-lg shadow-lg w-full mb-2">
+                    <p class="text-gray-400 text-sm text-center mb-4">Garden Path Matches</p>
+
+                    <img src="output_part2/feature_matching_garage.jpg" alt="Matches Garage" class="rounded-lg shadow-lg w-full mb-2">
+                    <p class="text-gray-400 text-sm text-center mb-4">Garage Matches</p>
+
+                    <img src="output_part2/feature_matching_haas.jpg" alt="Matches Haas" class="rounded-lg shadow-lg w-full mb-2">
+                    <p class="text-gray-400 text-sm text-center">Haas Matches</p>
+                    
+                </div>
+            
+                <div class="bg-gray-700 p-6 rounded-lg">
+                    <h3 class="text-lg font-bold text-white mb-3">Some Matching Statistics</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">
+                        Across my different scenes, Lowe's ratio test typically produced 50-100 initial matches from 500 features across my 5 images.
+                        RANSAC will further filter these to find a geometrically consistent set and remove outliers.
+                    </p>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                        <div class="bg-gray-800 p-3 rounded">
+                            <p class="text-gray-500">Berkeley Sunset</p>
+                            <p class="text-white font-bold">~100 matches</p>
+                        </div>
+                        <div class="bg-gray-800 p-3 rounded">
+                            <p class="text-gray-500">Study Room</p>
+                            <p class="text-white font-bold">~60 matches</p>
+                        </div>
+                        <div class="bg-gray-800 p-3 rounded">
+                            <p class="text-gray-500">Garden Path</p>
+                            <p class="text-white font-bold">~30 matches</p>
+                        </div>
+                        <div class="bg-gray-800 p-3 rounded">
+                            <p class="text-gray-500">Haas</p>
+                            <p class="text-white font-bold">~60 matches</p>
+                        </div>
+                        <div class="bg-gray-800 p-3 rounded">
+                            <p class="text-gray-500">Garage</p>
+                            <p class="text-white font-bold">~75 matches</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </section>
+        
+        <!-- B.4: RANSAC -->
+        <section id="part-b4">
+            <section class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+                <h2 class="text-3xl font-bold text-white mb-4">Part B.4: RANSAC for Robust Homography</h2>
+                <p class="text-gray-400 leading-relaxed mb-6">
+                    In this section I implement RANSAC and create automatic mosaics using the same warping
+                    and blending pipeline from Part A. The results demonstrate that 4-point automatic feature detection and matching
+                    can produce mosaics comparable to (or better than) manual correspondence selection, while being much faster
+                    and more scalable.
+                </p>
+
+                <div class="bg-gray-900 p-4 rounded-lg mb-6">
+                    <h3 class="text-lg font-bold text-white mb-3">RANSAC Algorithm</h3>
+                    <div class="text-gray-400 text-sm leading-relaxed space-y-2">
+                        <p><strong>Repeat for N iterations:</strong></p>
+                        <p class="ml-4">1. <strong>Randomly select 4 matches</strong> (minimum needed for homography)</p>
+                        <p class="ml-4">2. <strong>Compute homography H</strong> using these 4 points (exact solution)</p>
+                        <p class="ml-4">3. <strong>For each match (p₁, p₂):</strong></p>
+                        <p class="ml-8">• p₁' = H × p₁</p>
+                        <p class="ml-8">• Compute distance ||p₁' - p₂||₂</p>
+                        <p class="ml-8">• If e < threshold, add to inliers list</p>
+                                <p class="ml-4">4. <strong>Track H with most inliers</strong></p>
+                                <p class="mt-3"><strong>After all iterations:</strong></p>
+                                <p class="ml-4">5. <strong>Recompute H using all inliers</strong></p>
+                    </div>
+                </div>
+
+                <div class="mb-12">
+                    <h3 class="text-xl font-bold text-white mb-4">Mosaic 1: Berkeley Sunset</h3>
+                    <div class="mb-6">
+                        <img src="output_part2/ransac_bancroft.jpg" alt="RANSAC Berkeley Sunset" class="rounded-lg shadow-lg w-full mb-2">
+                        <p class="text-gray-400 text-sm">
+                            <strong>Berkeley Sunset:</strong>
+                            <span class="text-green-400">Green = Inliers (54)</span> |
+                            <span class="text-red-400">Red = Outliers (46)</span><br>
+                        </p>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <img src="output/bancroft.jpg" alt="Manual Berkeley Sunset Mosaic" class="rounded-lg shadow-lg w-full mb-2">
+                            <p class="text-gray-400 text-sm text-center"><strong>Manual Stitching</strong><br>16 hand-selected
+                                correspondences</p>
+                        </div>
+                        <div>
+                            <img src="output_part2/bancroft.jpg" alt="Auto Berkeley Sunset Mosaic"
+                                class="rounded-lg shadow-lg w-full mb-2">
+                            <p class="text-gray-400 text-sm text-center"><strong>Automatic Stitching</strong><br>54 RANSAC inliers
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-12">
+                    <h3 class="text-xl font-bold text-white mb-4">Mosaic 2: Study Room</h3>
+                    <div class="mb-6">
+                        <img src="output_part2/ransac_room.jpg" alt="RANSAC Study Room"
+                            class="rounded-lg shadow-lg w-full mb-2">
+                        <p class="text-gray-400 text-sm">
+                            <strong>Study Room:</strong>
+                            <span class="text-green-400">Green = Inliers (11)</span> |
+                            <span class="text-red-400">Red = Outliers (49)</span><br>
+                        </p>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <img src="output/room.jpg" alt="Manual Study Study Roomosaic" class="rounded-lg shadow-lg w-full mb-2">
+                            <p class="text-gray-400 text-sm text-center"><strong>Manual Stitching</strong><br>16 hand-selected
+                                correspondences</p>
+                        </div>
+                        <div>
+                            <img src="output_part2/room.jpg" alt="Auto Study Room Mosaic"
+                                class="rounded-lg shadow-lg w-full mb-2">
+                            <p class="text-gray-400 text-sm text-center"><strong>Automatic Stitching</strong><br>11 RANSAC inliers
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            
+                <div class="mb-12">
+                    <h3 class="text-xl font-bold text-white mb-4">Mosaic 3: Garden Path</h3>
+                    <div class="mb-6">
+                        <img src="output_part2/ransac_path.jpg" alt="RANSAC Garden Path" class="rounded-lg shadow-lg w-full mb-2">
+                        <p class="text-gray-400 text-sm">
+                            <strong>Garden Path:</strong>
+                            <span class="text-green-400">Green = Inliers (12)</span> |
+                            <span class="text-red-400">Red = Outliers (19)</span><br>
+                        </p>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <img src="output/path.jpg" alt="Manual Garden Path Mosaic" class="rounded-lg shadow-lg w-full mb-2">
+                            <p class="text-gray-400 text-sm text-center"><strong>Manual Stitching</strong><br>9 hand-selected
+                                correspondences</p>
+                        </div>
+                        <div>
+                            <img src="output_part2/path.jpg" alt="Auto Garden Path Mosaic"
+                                class="rounded-lg shadow-lg w-full mb-2">
+                            <p class="text-gray-400 text-sm text-center"><strong>Automatic Stitching</strong><br>12 RANSAC inliers
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            
+                <div class="mb-12">
+                    <h3 class="text-xl font-bold text-white mb-4">Mosaic 4: Haas Building</h3>
+                    <div class="mb-6">
+                        <img src="output_part2/ransac_haas.jpg" alt="RANSAC Haas" class="rounded-lg shadow-lg w-full mb-2">
+                        <p class="text-gray-400 text-sm">
+                            <strong>Haas:</strong>
+                            <span class="text-green-400">Green = Inliers (25)</span> |
+                            <span class="text-red-400">Red = Outliers (36)</span><br>
+                        </p>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <img src="output/haas.jpg" alt="Manual Haas Mosaic" class="rounded-lg shadow-lg w-full mb-2">
+                            <p class="text-gray-400 text-sm text-center"><strong>Manual Stitching</strong><br>21 hand-selected
+                                correspondences</p>
+                        </div>
+                        <div>
+                            <img src="output_part2/haas.jpg" alt="Auto Haas Mosaic"
+                                class="rounded-lg shadow-lg w-full mb-2">
+                            <p class="text-gray-400 text-sm text-center"><strong>Automatic Stitching</strong><br>25 RANSAC inliers
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            
+                <div class="mb-12">
+                    <h3 class="text-xl font-bold text-white mb-4">Mosaic 5: Garage</h3>
+                    <div class="mb-6">
+                        <img src="output_part2/ransac_garage.jpg" alt="RANSAC Garage" class="rounded-lg shadow-lg w-full mb-2">
+                        <p class="text-gray-400 text-sm">
+                            <strong>Garage:</strong>
+                            <span class="text-green-400">Green = Inliers (42)</span> |
+                            <span class="text-red-400">Red = Outliers (32)</span><br>
+                        </p>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <img src="output/garage.jpg" alt="Manual Garage Mosaic" class="rounded-lg shadow-lg w-full mb-2">
+                            <p class="text-gray-400 text-sm text-center"><strong>Manual Stitching</strong><br>23 hand-selected
+                                correspondences</p>
+                        </div>
+                        <div>
+                            <img src="output_part2/garage.jpg" alt="Auto Garage Mosaic"
+                                class="rounded-lg shadow-lg w-full mb-2">
+                            <p class="text-gray-400 text-sm text-center"><strong>Automatic Stitching</strong><br>42 RANSAC inliers
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </section>
 
         <!-- Footer -->
@@ -688,6 +1140,36 @@ def warpImageBilinear(im, H):
             <p class="mt-2">University of California, Berkeley • Fall 2025</p>
         </footer>
     </div>
+</div>
+
+    <!-- TOC -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const sections = document.querySelectorAll("section[id]");
+            const navLinks = document.querySelectorAll("#toc nav a");
+
+            function activateLink() {
+                let current = "";
+                sections.forEach(section => {
+                    const rect = section.getBoundingClientRect();
+                    if (rect.top <= 150 && rect.bottom >= 150) {
+                        current = section.id;
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove("text-blue-400", "font-semibold");
+                    if (link.getAttribute("href") === `#${current}`) {
+                        link.classList.add("text-blue-400", "font-semibold");
+                    }
+                });
+            }
+
+            window.addEventListener("scroll", activateLink);
+            activateLink(); // run once on load
+        });
+    </script>
+
 </body>
 
 </html>
