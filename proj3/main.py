@@ -671,7 +671,7 @@ def visualize_auto_mosaic(im1, im2, H, name=""):
     im2_alpha = np.ones((im2.shape[0], im2.shape[1]), dtype=np.float32)
     im2_offset = (0, 0)
     
-    # Blend images
+    # blend images
     mosaic, _ = blendImages(im1_warped, alpha1, offset1, im2, im2_alpha, im2_offset)
 
     print(f"Auto mosaic {name}: {mosaic.shape}")
