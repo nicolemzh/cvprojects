@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project 4: Neural Radiance Fields</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+</head>
+
+<body class="bg-gray-900 text-gray-200">
+    <!-- Table of Contents Sidebar -->
+    <aside id="toc"
+        class="fixed left-0 top-0 h-full w-64 bg-gray-800 border-r border-gray-700 overflow-y-auto hidden md:block">
+        <div class="p-6">
+            <h2 class="text-lg font-semibold text-white mb-4">Contents</h2>
+            <nav class="space-y-2">
+                <a href="#overview" class="block text-gray-400 hover:text-white transition-colors">Overview</a>
+                <a href="#part0" class="block text-gray-400 hover:text-white transition-colors">Part 0: Camera Calibration</a>
+                <a href="#part0-1" class="block text-gray-400 hover:text-white transition-colors ml-4">0.1: Calibrating Camera</a>
+                <a href="#part0-2" class="block text-gray-400 hover:text-white transition-colors ml-4">0.2: Capturing 3D Scan</a>
+                <a href="#part0-3" class="block text-gray-400 hover:text-white transition-colors ml-4">0.3: Estimating Pose</a>
+                <a href="#part0-4" class="block text-gray-400 hover:text-white transition-colors ml-4">0.4: Creating Dataset</a>
+                <a href="#part1" class="block text-gray-400 hover:text-white transition-colors">Part 1: 2D Neural Field</a>
+                <a href="#part2" class="block text-gray-400 hover:text-white transition-colors">Part 2: 3D NeRF</a>
+                <a href="#part2-1" class="block text-gray-400 hover:text-white transition-colors ml-4">2.1: Create Rays</a>
+                <a href="#part2-2" class="block text-gray-400 hover:text-white transition-colors ml-4">2.2: Sampling</a>
+                <a href="#part2-4" class="block text-gray-400 hover:text-white transition-colors ml-4">2.4: NeRF Network</a>
+                <a href="#part2-5" class="block text-gray-400 hover:text-white transition-colors ml-4">2.5: Volume Rendering</a>
+                <a href="#part2-6" class="block text-gray-400 hover:text-white transition-colors ml-4">2.6: Own Data</a>
+            </nav>
+        </div>
+    </aside>
+
+    <div class="md:ml-64 min-h-screen flex flex-col items-center py-12 px-4">
+        <!-- Back to Portfolio -->
+        <a href="../index.html"
+            class="self-start text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200 mb-8">
+            ← Back to Portfolio
+        </a>
+
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-5xl md:text-6xl font-extrabold text-white mb-4">
+                Project 4: Neural Radiance Fields
+            </h1>
+            <p class="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto">
+                Building 3D scene representations from 2D images using neural networks and volume rendering
+            </p>
+        </header>
+
+        <!-- Overview -->
+        <section id="overview" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Overview</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                This project explores Neural Radiance Fields (NeRF), a powerful technique for synthesizing novel views of 
+                complex 3D scenes from a set of 2D images. I implemented the complete pipeline: from camera calibration and 
+                pose estimation, to training neural networks that represent scenes as continuous 5D functions (spatial location 
+                and viewing direction to color and density). The project progresses from fitting a neural field to a single 2D 
+                image, to reconstructing full 3D scenes with photorealistic rendering from arbitrary viewpoints.
+            </p>
+        </section>
+
+        <!-- Part 0 Header -->
+        <div class="w-full max-w-4xl mb-8">
+            <h1 class="text-4xl font-bold text-blue-400 border-b-4 border-blue-400 pb-2">
+                Part 0: Camera Calibration and 3D Object Scanning
+            </h1>
+        </div>
+
+        <!-- Part 0.1: Camera Calibration -->
+        <section id="part0-1" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 0.1: Calibrating Your Camera</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                I captured 39 images of ArUco calibration tags from various angles and distances using my phone camera. The calibration process extracts the camera's 
+                intrinsic parameters (focal length, principal point) and distortion coefficients using OpenCV's calibration functions.
+            </p>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Samples of Captured Images</h3>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="text-center">
+                        <img src="calibration_images/IMG_5200.jpg" alt="" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2"></p>
+                    </div>
+                    <div class="text-center">
+                        <img src="calibration_images/IMG_5210.jpg" alt="" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2"></p>
+                    </div>
+                    <div class="text-center">
+                        <img src="calibration_images/IMG_5220.jpg" alt="" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2"></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Part 0.2: Capturing 3D Scan -->
+        <section id="part0-2" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 0.2: Capturing a 3D Object Scan</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                I selected my rubiks cube and placed it next to a single ArUco tag (#18) on a flat surface. Using the same camera and 
+                zoom settings as calibration, I captured 79 images from different angles in a rotating motion, keeping the same distance away 
+                from the object.
+            </p>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Sample Captured Images</h3>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="text-center">
+                        <img src="cube_images/IMG_5310.jpg" alt="" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2"></p>
+                    </div>
+                    <div class="text-center">
+                        <img src="cube_images/IMG_5330.jpg" alt="" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2"></p>
+                    </div>
+                    <div class="text-center">
+                        <img src="cube_images/IMG_5350.jpg" alt="" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2"></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Part 0.3: Estimating Camera Pose -->
+        <section id="part0-3" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 0.3: Estimating Camera Pose</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                Using the calibrated camera parameters, I estimated the 6-DOF camera pose (rotation and translation) for 
+                each captured image using the Perspective-n-Point (PnP) algorithm. The ArUco tag serves as the world 
+                coordinate frame origin.
+            </p>
+
+            <div class="bg-gray-900 p-4 rounded-lg mb-6">
+                <h3 class="text-lg font-bold text-white mb-3">PnP Pipeline</h3>
+                <div class="text-gray-400 text-sm leading-relaxed">
+                    <p class="mb-2"><strong>Input:</strong> 3D tag corners in world space + 2D detected corners in image</p>
+                    <p class="mb-2"><strong>Solve:</strong> cv2.solvePnP() finds rotation (rvec) and translation (tvec)</p>
+                    <p class="mb-2"><strong>Convert:</strong> Rodrigues formula converts rvec to 3×3 rotation matrix R</p>
+                    <p class="mb-2"><strong>Invert:</strong> Compute camera-to-world from world-to-camera transform</p>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Camera Frustum Visualization</h3>
+                <p class="text-gray-400 text-sm mb-4">
+                    Using Viser, I then visualized the estimated camera poses as 3D frustums showing position, orientation, 
+                    and image for each set.
+                </p>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="text-center">
+                        <img src="nerf_output/cube/cube_render.png" alt="Viser View 1" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Cube Perspective 1</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="nerf_output/cube/cube_render_2.png" alt="Viser View 2" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Cube Perspective 2</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="calibration_render.png" alt="Viser View 2" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Calibration Perspective 1</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="calibration_render_2.png" alt="Viser View 2" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Calibration Perspective 2</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Part 0.4: Creating Dataset -->
+        <section id="part0-4" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 0.4: Undistorting Images and Creating Dataset</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                My final preprocessing step involves undistorting all captured images using the calibration results and 
+                packaging everything into a .npz dataset file compatible with the NeRF training code later on.
+            </p>
+
+            <div class="bg-gray-900 p-4 rounded-lg mb-6">
+                <h3 class="text-lg font-bold text-white mb-3">Dataset Creation Pipeline</h3>
+                <div class="text-gray-400 text-sm leading-relaxed">
+                    <pclass="mb-2"><strong>2. Crop black borders:</strong> Call cv2.getOptimalNewCameraMatrix()</p>
+                    <p class="mb-2"><strong>1. Undistort:</strong> Remove lens distortion using cv2.undistort()</p>
+                    <p class="mb-2"><strong>3. Update intrinsics:</strong> Adjust principal point (cx, cy) after cropping</p>
+                    <p class="mb-2"><strong>4. Split data:</strong> Divide into train (80%), validation (15%), test (5%) sets</p>
+                    <p class="mb-2"><strong>5. Save .npz:</strong> Package images, c2ws, and intrinsics for NeRF training</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Part 1 Header -->
+        <div class="w-full max-w-4xl mb-8">
+            <h1 class="text-4xl font-bold text-blue-400 border-b-4 border-blue-400 pb-2">
+                Part 1: Fit a Neural Field to a 2D Image
+            </h1>
+        </div>
+
+        <!-- Part 1: 2D Neural Field -->
+        <section id="part1" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Neural Field for 2D Image Representation</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                Before tackling 3D NeRF, I implemented a simpler 2D neural field that learns to represent an image as a 
+                continuous function f(x, y) → (r, g, b). This involves an MLP with sinusoidal positional encoding to match 
+                normalized pixels to RGB colors.
+            </p>
+
+            <div class="bg-gray-900 p-4 rounded-lg mb-6">
+                <h3 class="text-lg font-bold text-white mb-3">Network Architecture</h3>
+                <div class="text-gray-400 text-sm leading-relaxed">
+                    <p class="mb-2"><strong>Input:</strong> 2D coordinates (x, y) normalized to [0, 1]</p>
+                    <p class="mb-2"><strong>Positional Encoding:</strong> Expand to 4L + 2 dimensions using sin/cos at L frequency levels</p>
+                    <p class="mb-2"><strong>MLP:</strong> 3-4 hidden layers with ReLU activations</p>
+                    <p class="mb-2"><strong>Output:</strong> RGB values through Sigmoid (range [0, 1])</p>
+                    <p class="mt-3"><strong>Loss:</strong> MSE between predicted and ground truth pixel colors</p>
+                    <p><strong>Optimizer:</strong> Adam with learning rate 1e-2</p>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-1 gap-6 mb-8">
+                <div class="bg-gray-700 p-6 rounded-lg">
+                    <h3 class="text-lg font-bold text-white mb-3">Model Configuration</h3>
+                    <ul class="list-disc list-inside text-gray-400 space-y-2 text-sm">
+                        <li><strong>Layers:</strong> 4 layers (x -> 256 -> 256 -> 256 -> rgb)</li>
+                        <li><strong>Width:</strong> 256 hidden units</li>
+                        <li><strong>Positional Encoding:</strong> L=10 (42-dim encoding)</li>
+                        <li><strong>Activation:</strong> ReLU for hidden layers, Sigmoid for output</li>
+                        <li><strong>Learning Rate:</strong> 1e-2</li>
+                        <li><strong>Batch Size:</strong> 10,000 pixels per iteration (batch size)</li>
+                        <li><strong>Iterations:</strong> 3,000</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <p class="text-gray-400 text-sm mb-4">Original Image</p>
+                <img src="fox.jpg" alt="Training Progression Own" class="rounded-lg shadow-lg w-full mb-4">
+                <h3 class="text-xl font-bold text-white mb-4">Training Progression - Test Image</h3>
+                <img src="output/fox/L5/iter_2000.png" alt="Training Progression" class="rounded-lg shadow-lg w-full mb-4">
+                <img src="output/fox/L5/progression.png" alt="Training Progression" class="rounded-lg shadow-lg w-full mb-4">
+                <p class="text-gray-400 text-sm mb-4">
+                    I experimented with different values for L and width, and can see here that lower L values make the image overly smooth and blurry, while
+                    higher width values help sharpen the image. The above image progression has L=5 while the second uses L=20.
+                </p>
+                <img src="output/fox/L20/iter_2000.png" alt="Training Progression" class="rounded-lg shadow-lg w-full mb-4">
+                <img src="output/fox/L20/progression.png" alt="Training Progression" class="rounded-lg shadow-lg w-full mb-4">
+            </div>
+
+            <div class="mb-8">
+                <p class="text-gray-400 text-sm mb-4">Original Image</p>
+                <img src="bird.jpg" alt="Training Progression Own" class="rounded-lg shadow-lg w-full mb-4">
+                <h3 class="text-xl font-bold text-white mb-4">Training Progression - My Own Image</h3>
+                <img src="output/bird/L20W128/iter_3000.png" alt="Training Progression Own" class="rounded-lg shadow-lg w-full mb-4">
+                <img src="output/bird/L20W128/progression.png" alt="Training Progression Own" class="rounded-lg shadow-lg w-full mb-4">
+                <p class="text-gray-400 text-sm mb-4">
+                    Similar progression on a custom image I took. The first uses width=128 while the second uses width=64 (both with
+                    L=20). I also include the psnr training curve.
+                </p>
+                <img src="output/bird/L20/iter_3000.png" alt="Training Progression Own" class="rounded-lg shadow-lg w-full mb-4">
+                <img src="output/bird/L20/progression.png" alt="Training Progression Own" class="rounded-lg shadow-lg w-full mb-4">
+                <img src="output/bird/L20/psnr_curve.png" alt="Training Progression Own" class="rounded-lg shadow-lg w-full mb-4">
+                
+            </div>
+        </section>
+
+        <!-- Part 2 Header -->
+        <div class="w-full max-w-4xl mb-8">
+            <h1 class="text-4xl font-bold text-blue-400 border-b-4 border-blue-400 pb-2">
+                Part 2: Fit a Neural Radiance Field from Multi-view Images
+            </h1>
+        </div>
+        
+        <!-- Part 2.1: Create Rays -->
+        <section id="part2-1" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 2.1: Create Rays from Cameras</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                To render images from a NeRF, we need to cast rays through each pixel as showin in viser, which involves three coordinate
+                transformations: pixel -> camera -> world coordinates.
+            </p>
+        
+            <div class="bg-gray-900 p-4 rounded-lg mb-6">
+                <h3 class="text-lg font-bold text-white mb-3">Coordinate Transformations</h3>
+                <div class="text-gray-400 text-sm leading-relaxed space-y-3">
+                    <p class="mb-3">I implemented three key functions for ray generation:</p>
+                    <p class="mb-2"><strong>transform():</strong> Converts points from camera to world (c2w) coordinates using matrix
+                        multiplication with the c2w transformation. I made coordinates homogeneous by appending 1s, then
+                        multiplied by c2w and extracted the 3D result.
+                        <p class="font-mono mb-2">x_world = c2w @ x_camera</p>
+                    </p>
+                    <p class="mb-2"><strong>pixel_to_camera():</strong> Uses the inverse intrinsics matrix K^-1 to unproject 2D
+                        pixel coordinates to 3D camera space. I then stacked pixel coordinates with 1s, multiplied by K^-1, then
+                        scaled with depth.
+                        <p class="font-mono mb-2">x_camera = K^(-1) @ [u, v, 1]^T × depth</p>
+                    </p>
+                    <p><strong>pixel_to_ray():</strong> Combines the above two functions to generate rays. For each pixel, I
+                        computed its 3D position at depth=1 in camera space, transformed to world space, then calculated the ray
+                        origin (camera center from c2w) and normalized direction vector.
+                    </p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Part 2.2: Sampling -->
+        <section id="part2-2" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 2.2 & 2.3: Sampling Points Along Rays</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                To evaluate the NeRF along each ray, I represent rays into N sample points between near and far planes.
+                During training, I also added random perturbations to avoid overfitting to fixed sample locations.
+                Below, I explain how I implement each function:
+            </p>
+
+            <div class="bg-gray-900 p-4 rounded-lg mb-6">
+                <h3 class="text-lg font-bold text-white mb-3">sample_rays_from_images()</h3>
+                <div class="text-gray-400 text-sm leading-relaxed">
+                    <p class="mb-3">I first created meshgrid of all pixel coordinates (i, j) for
+                        all training images. Then, for each training iteration I selected N pixels from across all images using
+                        np.random.choice(). I added 0.5 to pixel coordinates to get the pixel centers. Then, I used my pixel_to_ray() function
+                        to compute the origin and direction of the ray.</p>
+                </div>
+            </div>
+
+            <div class="bg-gray-900 p-4 rounded-lg mb-6">
+                <h3 class="text-lg font-bold text-white mb-3">sample_along_rays()</h3>
+                <div class="text-gray-400 text-sm leading-relaxed">
+                    <p class="mb-3">I create N evenly spaced values between near and far parameters using torch.linspace(). I compute the 
+                        midpoints and randomly perturb each sample. Then, I compute the 3D locations using pts = ray_o + ray_d × t, broadcasting across all rays and samples.
+                    </p>
+                </div>
+            </div>
+        
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Visualization of Rays and Samples</h3>
+                <p class="text-gray-400 text-sm mb-4">
+                    Below shows up to 100 randomly sampled rays from the first camera, along with sample points along each ray. 
+                    The rays originate from the camera center and pass through the scene.
+                </p>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="text-center">
+                        <img src="nerf_output/lego/lego_render_3.png" alt="Rays Visualization 1" class="rounded-lg shadow-lg w-full">
+                    </div>
+                    <div class="text-center">
+                        <img src="nerf_output/lego/lego_render_2.png" alt="Rays Visualization 1" class="rounded-lg shadow-lg w-full">
+                    </div>
+                    <div class="text-center">
+                        <img src="nerf_output/lego/lego_render_1.png" alt="Rays Visualization 1" class="rounded-lg shadow-lg w-full">
+                    </div>
+                    <div class="text-center">
+                        <img src="nerf_output/lego/lego_render_4.png" alt="Rays Visualization 1" class="rounded-lg shadow-lg w-full">
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Part 2.4: NeRF Network -->
+        <section id="part2-4" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 2.4: Neural Radiance Field Network</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                My NeRF network takes 3D positions x and viewing directions r_d as input, and outputs RGB color and volume
+                density.
+            </p>
+        
+            <div class="bg-gray-900 p-4 rounded-lg mb-6">
+                <h3 class="text-lg font-bold text-white mb-3">Network Architecture</h3>
+                <div class="text-gray-400 text-sm leading-relaxed mb-4">
+                    <p class="mb-2"><strong>Input:</strong></p>
+                    <p class="ml-4 mb-2">• 3D position (x, y, z) with positional encoding (L=10)</p>
+                    <p class="ml-4 mb-2">• View direction with positional encoding (L=4)</p>
+        
+                    <p class="mb-2 mt-3"><strong>Architecture:</strong></p>
+                    <p class="ml-4 mb-2">• 8 fully connected layers (256 units each)</p>
+                    <p class="ml-4 mb-2">• Skip connection at layer 5</p>
+                    <p class="ml-4 mb-2">• Density head: 1 neuron with ReLU</p>
+                    <p class="ml-4 mb-2">• Color head: 2 layers, that output 3 RGB values with Sigmoid</p>
+        
+                    <p class="mb-2 mt-3"><strong>Output:</strong></p>
+                    <p class="ml-4 mb-2">• RGB representing color at position given by the viewing direction</p>
+                    <p class="ml-4">• density</p>
+                </div>
+                <div class="text-center">
+                    <img src="nerf_network.png" alt="Rays Visualization 1" class="rounded-lg shadow-lg w-full">
+                </div>
+            </div>
+        </section>
+        
+        <!-- Part 2.5: Volume Rendering -->
+        <section id="part2-5" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 2.5: Volume Rendering</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                The volume rendering proedure combines the color and density values along each ray to produce the final pixel color.
+            </p>
+        
+            <div class="bg-gray-700 p-6 rounded-lg mb-6">
+                <h3 class="text-lg font-bold text-white mb-3">Implementation Overview</h3>
+                <div class="text-gray-400 text-sm leading-relaxed">
+                    <p class="mb-3">I implemented the discrete volume rendering equation using PyTorch operations:</p>
+                    <p class="mb-2"><strong>volrend():</strong> First, I computed alpha values (opacity) using the formula:
+                        alpha = 1 - exp(-sigma × delta). Then I calculated transmittance using torch.cumsum() to sum all
+                        density values. Finally, I computed weights by
+                        multiplying transmittance and alpha, then found the final color using torch.sum(weights × rgbs).
+                    </p>
+                    <p class="mb-2"><strong>render_rays():</strong> This function samples points
+                        along rays using sample_along_rays(), queries the NeRF network for RGB and density at each point, then
+                        calls volrend() to composite the final pixel color.</p>
+                </div>
+            </div>
+        
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Training Progression</h3>
+                <img src="nerf_output/lego/training_progression.png" alt="NeRF Training"
+                    class="rounded-lg shadow-lg w-full mb-4">
+            </div>
+        
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">PSNR Curves</h3>
+                <img src="nerf_output/lego/psnr_curve.png" alt="Training Curves" class="rounded-lg shadow-lg w-full mb-4">
+                <p class="text-gray-400 text-sm">
+                    Over 1,000 iterations, we achieve a final validation PSNR of 23.5 dB.
+                </p>
+            </div>
+        
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Novel Views</h3>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="text-center">
+                        <img src="nerf_output/lego/test_pose_orbit.gif" alt="Test Poses"
+                            class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Rendering from provided test camera poses</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="nerf_output/lego/novel_orbit.gif" alt="Novel Orbit" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Spherical orbit around the scene (60 frames)</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Part 2.6: Own Data -->
+        <section id="part2-6" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 2.6: Training NeRF on My Own Data</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                Using the dataset cube created in Part 0, I trained a NeRF on my own captured object. This required adjusting
+                hyperparameters like near/far planes and sample count to match the different scene scale.
+            </p>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Visualization of Rays and Samples</h3>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="text-center">
+                        <img src="nerf_output/cube/cube_render.png" alt="Rays Visualization 1"
+                            class="rounded-lg shadow-lg w-full">
+                    </div>
+                    <div class="text-center">
+                        <img src="nerf_output/cube/cube_render_2.png" alt="Rays Visualization 1"
+                            class="rounded-lg shadow-lg w-full">
+                    </div>
+                </div>
+            </div>
+        
+            <div class="bg-gray-700 p-6 rounded-lg mb-6">
+                <h3 class="text-lg font-bold text-white mb-3">Hyperparameter Adjustments</h3>
+                <ul class="list-disc list-inside text-gray-400 space-y-2">
+                    <li><strong>Near/Far planes:</strong> Changed from (2.0, 6.0) to (0.02, 0.6)</li>
+                    <li><strong>Samples per ray:</strong> Increased from 32 to 64 for better quality</li>
+                    <li><strong>Image resolution:</strong> Resized images to reasonable size (~200-300px) and recomputed calibration matrices for faster training</li>
+                    <li><strong>Training iterations:</strong> Trained for 1500 iterations to reach convergence</li>
+                    <li><strong>Learning rate:</strong> Kept at 5e-4</li>
+                </ul>
+            </div>
+        
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Training Progression</h3>
+                <img src="nerf_output/cube/training_progression.png" alt="Own NeRF Training"
+                    class="rounded-lg shadow-lg w-full mb-4">
+            </div>
+        
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Training Loss Curve</h3>
+                <img src="nerf_output/cube/training_curves.png" alt="Own Training Loss"
+                    class="rounded-lg shadow-lg w-full mb-4">
+                <p class="text-gray-400 text-sm">
+                    Training and validation PSNR curves show steady improvement. The model converges to a stable
+                    representation of the scene after ~1500 iterations with PSNR = 16.
+                </p>
+            </div>
+        
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Novel View Rendering</h3>
+                <div class="text-center">
+                    <img src="nerf_output/cube/test_pose_orbit_cube.gif" alt="Own Object Orbit"
+                        class="rounded-lg shadow-lg w-full max-w-2xl mx-auto">
+                </div>
+            </div>
+        
+            <div class="bg-gray-700 p-6 rounded-lg">
+                <h3 class="text-lg font-bold text-white mb-3">Challenges</h3>
+                <div class="text-gray-400 text-sm space-y-3">
+                    <div>
+                        <p>The biggest challenge I faced was being limited by my compute. Ideally, I would be able to reach full convergence and run for 
+                            2000-3000 iterations, but my laptop was not strong enough and colab blocked my student verification 
+                            to get online GPUs. Each training loop took ~30 minutes, and I was not able to tune my hyperparameters
+                            to my best degree compared to if I had more compute power. Still, I think the gif clearly shows the rubiks
+                            cube and the tag on the surface.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Footer -->
+        <footer class="text-center text-gray-500 text-sm mt-12">
+            <p>CS 180/280A: Intro to Computer Vision and Computational Photography</p>
+            <p class="mt-2">University of California, Berkeley • Fall 2025</p>
+        </footer>
+        </div>
+        
+        <!-- TOC Script -->
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const sections = document.querySelectorAll("section[id]");
+                const navLinks = document.querySelectorAll("#toc nav a");
+
+                function activateLink() {
+                    let current = "";
+                    sections.forEach(section => {
+                        const rect = section.getBoundingClientRect();
+                        if (rect.top <= 150 && rect.bottom >= 150) {
+                            current = section.id;
+                        }
+                    });
+
+                    navLinks.forEach(link => {
+                        link.classList.remove("text-blue-400", "font-semibold");
+                        if (link.getAttribute("href") === `#${current}`) {
+                            link.classList.add("text-blue-400", "font-semibold");
+                        }
+                    });
+                }
+
+                window.addEventListener("scroll", activateLink);
+                activateLink();
+            });
+        </script>
+        
+        </body>
+        
+        </html>

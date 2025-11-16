@@ -1,0 +1,321 @@
+preprocessing.py: part 0
+neural_field.py: part 1
+nerf.py: part 2 used to generate lego and own images
+
+if you place the files in this directory, they should run.
+
+
+.
+├── README
+├── __MACOSX
+│   └── jpegmini_optimized
+├── __pycache__
+│   ├── nerf_network.cpython-313.pyc
+│   ├── neural_field.cpython-311.pyc
+│   ├── neural_field.cpython-313.pyc
+│   ├── neural_field.cpython-39.pyc
+│   ├── rays.cpython-311.pyc
+│   ├── rays.cpython-313.pyc
+│   └── rays.cpython-39.pyc
+├── bird.jpg
+├── calibration_images
+│   ├── IMG_5200.jpg
+│   ├── IMG_5201.jpg
+│   ├── IMG_5202.jpg
+│   ├── IMG_5203.jpg
+│   ├── IMG_5204.jpg
+│   ├── IMG_5205.jpg
+│   ├── IMG_5206.jpg
+│   ├── IMG_5207.jpg
+│   ├── IMG_5208.jpg
+│   ├── IMG_5209.jpg
+│   ├── IMG_5210.jpg
+│   ├── IMG_5211.jpg
+│   ├── IMG_5212.jpg
+│   ├── IMG_5213.jpg
+│   ├── IMG_5214.jpg
+│   ├── IMG_5215.jpg
+│   ├── IMG_5216.jpg
+│   ├── IMG_5217.jpg
+│   ├── IMG_5218.jpg
+│   ├── IMG_5219.jpg
+│   ├── IMG_5220.jpg
+│   ├── IMG_5221.jpg
+│   ├── IMG_5222.jpg
+│   ├── IMG_5223.jpg
+│   ├── IMG_5224.jpg
+│   ├── IMG_5225.jpg
+│   ├── IMG_5226.jpg
+│   ├── IMG_5227.jpg
+│   ├── IMG_5228.jpg
+│   ├── IMG_5229.jpg
+│   ├── IMG_5230.jpg
+│   ├── IMG_5231.jpg
+│   ├── IMG_5232.jpg
+│   ├── IMG_5233.jpg
+│   ├── IMG_5234.jpg
+│   ├── IMG_5235.jpg
+│   ├── IMG_5236.jpg
+│   ├── IMG_5237.jpg
+│   └── IMG_5238.jpg
+├── calibration_images_camera_calibration.npz
+├── calibration_images_camera_matrix.npy
+├── calibration_images_dist_coeffs.npy
+├── calibration_render.png
+├── calibration_render_2.png
+├── cube_images
+│   ├── IMG_5310.jpg
+│   ├── IMG_5311.jpg
+│   ├── IMG_5312.jpg
+│   ├── IMG_5313.jpg
+│   ├── IMG_5314.jpg
+│   ├── IMG_5315.jpg
+│   ├── IMG_5316.jpg
+│   ├── IMG_5317.jpg
+│   ├── IMG_5318.jpg
+│   ├── IMG_5319.jpg
+│   ├── IMG_5320.jpg
+│   ├── IMG_5321.jpg
+│   ├── IMG_5322.jpg
+│   ├── IMG_5323.jpg
+│   ├── IMG_5324.jpg
+│   ├── IMG_5325.jpg
+│   ├── IMG_5326.jpg
+│   ├── IMG_5327.jpg
+│   ├── IMG_5328.jpg
+│   ├── IMG_5329.jpg
+│   ├── IMG_5330.jpg
+│   ├── IMG_5331.jpg
+│   ├── IMG_5332.jpg
+│   ├── IMG_5333.jpg
+│   ├── IMG_5334.jpg
+│   ├── IMG_5335.jpg
+│   ├── IMG_5336.jpg
+│   ├── IMG_5337.jpg
+│   ├── IMG_5338.jpg
+│   ├── IMG_5339.jpg
+│   ├── IMG_5340.jpg
+│   ├── IMG_5341.jpg
+│   ├── IMG_5342.jpg
+│   ├── IMG_5343.jpg
+│   ├── IMG_5344.jpg
+│   ├── IMG_5345.jpg
+│   ├── IMG_5346.jpg
+│   ├── IMG_5347.jpg
+│   ├── IMG_5348.jpg
+│   ├── IMG_5349.jpg
+│   ├── IMG_5350.jpg
+│   ├── IMG_5351.jpg
+│   ├── IMG_5352.jpg
+│   ├── IMG_5353.jpg
+│   ├── IMG_5354.jpg
+│   ├── IMG_5355.jpg
+│   ├── IMG_5356.jpg
+│   ├── IMG_5357.jpg
+│   ├── IMG_5358.jpg
+│   ├── IMG_5359.jpg
+│   ├── IMG_5360.jpg
+│   ├── IMG_5361.jpg
+│   ├── IMG_5362.jpg
+│   ├── IMG_5363.jpg
+│   ├── IMG_5364.jpg
+│   ├── IMG_5365.jpg
+│   ├── IMG_5366.jpg
+│   ├── IMG_5367.jpg
+│   ├── IMG_5368.jpg
+│   ├── IMG_5369.jpg
+│   ├── IMG_5370.jpg
+│   ├── IMG_5371.jpg
+│   ├── IMG_5372.jpg
+│   ├── IMG_5373.jpg
+│   ├── IMG_5374.jpg
+│   ├── IMG_5375.jpg
+│   ├── IMG_5376.jpg
+│   ├── IMG_5377.jpg
+│   ├── IMG_5378.jpg
+│   ├── IMG_5379.jpg
+│   ├── IMG_5380.jpg
+│   ├── IMG_5381.jpg
+│   ├── IMG_5382.jpg
+│   ├── IMG_5383.jpg
+│   ├── IMG_5384.jpg
+│   ├── IMG_5385.jpg
+│   ├── IMG_5386.jpg
+│   ├── IMG_5387.jpg
+│   └── IMG_5388.jpg
+├── cube_images_camera_calibration.npz
+├── cube_images_camera_matrix.npy
+├── cube_images_dist_coeffs.npy
+├── fox.jpg
+├── index.html
+├── lego_200x200.npz
+├── mofusand_images
+│   ├── IMG_5239.jpg
+│   ├── IMG_5240.jpg
+│   ├── IMG_5241.jpg
+│   ├── IMG_5242.jpg
+│   ├── IMG_5243.jpg
+│   ├── IMG_5244.jpg
+│   ├── IMG_5245.jpg
+│   ├── IMG_5246.jpg
+│   ├── IMG_5247.jpg
+│   ├── IMG_5248.jpg
+│   ├── IMG_5249.jpg
+│   ├── IMG_5250.jpg
+│   ├── IMG_5251.jpg
+│   ├── IMG_5252.jpg
+│   ├── IMG_5253.jpg
+│   ├── IMG_5254.jpg
+│   ├── IMG_5255.jpg
+│   ├── IMG_5256.jpg
+│   ├── IMG_5257.jpg
+│   ├── IMG_5258.jpg
+│   ├── IMG_5259.jpg
+│   ├── IMG_5260.jpg
+│   ├── IMG_5261.jpg
+│   ├── IMG_5262.jpg
+│   ├── IMG_5263.jpg
+│   ├── IMG_5264.jpg
+│   ├── IMG_5265.jpg
+│   ├── IMG_5266.jpg
+│   ├── IMG_5267.jpg
+│   ├── IMG_5268.jpg
+│   ├── IMG_5269.jpg
+│   ├── IMG_5270.jpg
+│   ├── IMG_5271.jpg
+│   ├── IMG_5272.jpg
+│   ├── IMG_5273.jpg
+│   ├── IMG_5274.jpg
+│   ├── IMG_5275.jpg
+│   ├── IMG_5276.jpg
+│   ├── IMG_5277.jpg
+│   ├── IMG_5278.jpg
+│   ├── IMG_5279.jpg
+│   ├── IMG_5280.jpg
+│   ├── IMG_5281.jpg
+│   ├── IMG_5282.jpg
+│   ├── IMG_5283.jpg
+│   ├── IMG_5284.jpg
+│   ├── IMG_5285.jpg
+│   └── IMG_5286.jpg
+├── nerf
+│   ├── calibration_data.npz
+│   ├── cube_data.npz
+│   ├── lafufu_dataset.npz
+│   └── mofusand_data.npz
+├── nerf.py
+├── nerf_model.pth
+├── nerf_model_cube.pth
+├── nerf_network.png
+├── nerf_output
+│   ├── cube
+│   │   ├── cube_orbit.gif
+│   │   ├── cube_render.png
+│   │   ├── cube_render_2.png
+│   │   ├── test_pose_orbit_cube.gif
+│   │   ├── test_pose_orbit_cube2000.gif
+│   │   ├── training_curves.png
+│   │   └── training_progression.png
+│   ├── lego
+│   │   ├── lego_render_1.png
+│   │   ├── lego_render_2.png
+│   │   ├── lego_render_3.png
+│   │   ├── lego_render_4.png
+│   │   ├── novel_orbit.gif
+│   │   ├── psnr_curve.png
+│   │   ├── test_pose_orbit.gif
+│   │   ├── training_progression.png
+│   │   ├── val_5_iter_1.pth
+│   │   ├── val_5_iter_1000.pth
+│   │   ├── val_5_iter_200.pth
+│   │   ├── val_5_iter_400.pth
+│   │   ├── val_5_iter_600.pth
+│   │   └── val_5_iter_800.pth
+│   └── mofusand
+│       ├── mofusand.gif
+│       ├── training_curves.png
+│       └── training_progression.png
+├── neural_field.py
+├── output
+│   ├── bird
+│   │   ├── L20
+│   │   │   ├── iter_1.png
+│   │   │   ├── iter_1000.png
+│   │   │   ├── iter_1250.png
+│   │   │   ├── iter_1500.png
+│   │   │   ├── iter_1750.png
+│   │   │   ├── iter_2000.png
+│   │   │   ├── iter_2250.png
+│   │   │   ├── iter_250.png
+│   │   │   ├── iter_2500.png
+│   │   │   ├── iter_2750.png
+│   │   │   ├── iter_3000.png
+│   │   │   ├── iter_500.png
+│   │   │   ├── iter_750.png
+│   │   │   ├── model.pth
+│   │   │   ├── progression.png
+│   │   │   └── psnr_curve.png
+│   │   ├── L20W128
+│   │   │   ├── iter_1.png
+│   │   │   ├── iter_1000.png
+│   │   │   ├── iter_1250.png
+│   │   │   ├── iter_1500.png
+│   │   │   ├── iter_1750.png
+│   │   │   ├── iter_2000.png
+│   │   │   ├── iter_2250.png
+│   │   │   ├── iter_250.png
+│   │   │   ├── iter_2500.png
+│   │   │   ├── iter_2750.png
+│   │   │   ├── iter_3000.png
+│   │   │   ├── iter_500.png
+│   │   │   ├── iter_750.png
+│   │   │   ├── model.pth
+│   │   │   ├── progression.png
+│   │   │   └── psnr_curve.png
+│   │   └── L5
+│   │       ├── iter_1.png
+│   │       ├── iter_1000.png
+│   │       ├── iter_1250.png
+│   │       ├── iter_1500.png
+│   │       ├── iter_1750.png
+│   │       ├── iter_2000.png
+│   │       ├── iter_250.png
+│   │       ├── iter_500.png
+│   │       ├── iter_750.png
+│   │       ├── model.pth
+│   │       ├── progression.png
+│   │       └── psnr_curve.png
+│   └── fox
+│       ├── L20
+│       │   ├── iter_1.png
+│       │   ├── iter_1000.png
+│       │   ├── iter_1250.png
+│       │   ├── iter_1500.png
+│       │   ├── iter_1750.png
+│       │   ├── iter_2000.png
+│       │   ├── iter_250.png
+│       │   ├── iter_500.png
+│       │   ├── iter_750.png
+│       │   ├── model.pth
+│       │   ├── progression.png
+│       │   └── psnr_curve.png
+│       └── L5
+│           ├── iter_1.png
+│           ├── iter_1000.png
+│           ├── iter_1250.png
+│           ├── iter_1500.png
+│           ├── iter_1750.png
+│           ├── iter_2000.png
+│           ├── iter_250.png
+│           ├── iter_500.png
+│           ├── iter_750.png
+│           ├── model.pth
+│           ├── progression.png
+│           └── psnr_curve.png
+├── preprocessing.py
+└── submission
+    ├── code
+    └── web
+        └── page.pdf
+
+23 directories, 289 files
