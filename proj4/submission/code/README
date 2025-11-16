@@ -1,4 +1,4 @@
-preprocessing.py: part 0
+preprocessing.py: part 0 (generating datasets)
 neural_field.py: part 1
 nerf.py: part 2 used to generate lego and own images
 
