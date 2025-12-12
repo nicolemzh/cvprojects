@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project 5: Diffusion Models</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+</head>
+
+<body class="bg-gray-900 text-gray-200">
+    <!-- Table of Contents Sidebar -->
+    <aside id="toc"
+        class="fixed left-0 top-0 h-full w-64 bg-gray-800 border-r border-gray-700 overflow-y-auto hidden md:block">
+        <div class="p-6">
+            <h2 class="text-lg font-semibold text-white mb-4">Contents</h2>
+            <nav class="space-y-2">
+                <a href="#overview" class="block text-gray-400 hover:text-white transition-colors">Overview</a>
+
+                <!-- Part A -->
+                <a href="#parta" class="block text-blue-400 hover:text-white transition-colors font-semibold mt-4">Part
+                    A: Diffusion Models</a>
+                <a href="#part0" class="block text-gray-400 hover:text-white transition-colors ml-4">Part 0: Setup</a>
+                <a href="#part1" class="block text-gray-400 hover:text-white transition-colors ml-4">Part 1: Sampling
+                    Loops</a>
+                <a href="#part1-1" class="block text-gray-400 hover:text-white transition-colors ml-8">1.1: Forward
+                    Process</a>
+                <a href="#part1-2" class="block text-gray-400 hover:text-white transition-colors ml-8">1.2: Classical
+                    Denoising</a>
+                <a href="#part1-3" class="block text-gray-400 hover:text-white transition-colors ml-8">1.3: One-Step
+                    Denoising</a>
+                <a href="#part1-4" class="block text-gray-400 hover:text-white transition-colors ml-8">1.4: Iterative
+                    Denoising</a>
+                <a href="#part1-5" class="block text-gray-400 hover:text-white transition-colors ml-8">1.5: Sampling</a>
+                <a href="#part1-6" class="block text-gray-400 hover:text-white transition-colors ml-8">1.6: CFG</a>
+                <a href="#part1-7" class="block text-gray-400 hover:text-white transition-colors ml-8">1.7:
+                    Image-to-Image</a>
+                <a href="#part1-7-1" class="block text-gray-400 hover:text-white transition-colors ml-12">1.7.1:
+                    Hand-Drawn Images</a>
+                <a href="#part1-7-2" class="block text-gray-400 hover:text-white transition-colors ml-12">1.7.2:
+                    Inpainting</a>
+                <a href="#part1-7-3" class="block text-gray-400 hover:text-white transition-colors ml-12">1.7.3:
+                    Text-Conditional</a>
+                <a href="#part1-8" class="block text-gray-400 hover:text-white transition-colors ml-8">1.8: Visual
+                    Anagrams</a>
+                <a href="#part1-9" class="block text-gray-400 hover:text-white transition-colors ml-8">1.9: Hybrid
+                    Images</a>
+
+                <!-- Part B -->
+                <a href="#partb" class="block text-blue-400 hover:text-white transition-colors font-semibold mt-4">Part
+                    B: Flow Matching</a>
+                <a href="#partb-1" class="block text-gray-400 hover:text-white transition-colors ml-4">Part 1.1:
+                    UNet</a>
+                <a href="#partb-1-2" class="block text-gray-400 hover:text-white transition-colors ml-4">Part 1.2:
+                    Training Denoiser</a>
+                <a href="#partb-1-2-1" class="block text-gray-400 hover:text-white transition-colors ml-8">1.2.1:
+                    Training</a>
+                <a href="#partb-1-2-2" class="block text-gray-400 hover:text-white transition-colors ml-8">1.2.2: OOD
+                    Testing</a>
+                <a href="#partb-1-2-3" class="block text-gray-400 hover:text-white transition-colors ml-8">1.2.3: Pure
+                    Noise</a>
+                <a href="#partb-2-1" class="block text-gray-400 hover:text-white transition-colors ml-4">Part 2.1: Time
+                    Conditioning</a>
+                <a href="#partb-2-2" class="block text-gray-400 hover:text-white transition-colors ml-4">Part 2.2:
+                    Training Flow Model</a>
+                <a href="#partb-2-3" class="block text-gray-400 hover:text-white transition-colors ml-4">Part 2.3:
+                    Sampling</a>
+                <a href="#partb-2-4" class="block text-gray-400 hover:text-white transition-colors ml-4">Part 2.4: Class
+                    Conditioning</a>
+                <a href="#partb-2-5" class="block text-gray-400 hover:text-white transition-colors ml-4">Part 2.5:
+                    Training w/ Class</a>
+                <a href="#partb-2-6" class="block text-gray-400 hover:text-white transition-colors ml-4">Part 2.6: CFG
+                    Sampling</a>
+            </nav>
+        </div>
+    </aside>
+
+    <div class="md:ml-64 min-h-screen flex flex-col items-center py-12 px-4">
+        <!-- Back to Portfolio -->
+        <a href="../index.html"
+            class="self-start text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200 mb-8">
+            ← Back to Portfolio
+        </a>
+
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-5xl md:text-6xl font-extrabold text-white mb-4">
+                Project 5: Diffusion Models
+            </h1>
+            <p class="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto">
+                Exploring the Power of diffusion models for image generation, manipulation, and creative applications!
+            </p>
+        </header>
+
+        <!-- Overview -->
+        <section id="overview" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Overview</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                This project explores diffusion models, one of the most powerful techniques in modern generative AI. In
+                Part A, I work with pre-trained diffusion models (DeepFloyd IF) to explore various
+                denoising
+                techniques, and create optical illusions. In Part B, I build and train my own flow matching model from
+                scratch on
+                the MNIST dataset, implementing a UNet architecture and training pipeline to generate handwritten
+                digits.
+            </p>
+        </section>
+
+        <!-- PART A: THE POWER OF DIFFUSION MODELS -->
+
+        <div id="parta" class="w-full max-w-4xl mb-8">
+            <h1 class="text-4xl font-bold text-blue-400 border-b-4 border-blue-400 pb-2">
+                Part A: The Power of Diffusion Models
+            </h1>
+        </div>
+
+        <!-- Part 0: Setup -->
+        <section id="part0" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 0: Setup and Text Prompts</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                I began by using and understanding to DeepFloyd IF, a two-stage diffusion model by Stability AI. The first stage
+                produces 64×64 images, and the second stage upsamples to 256×256. I created custom text prompts and
+                generated their embeddings using the provided Hugging Face clusters.
+            </p>
+
+            <div class="bg-gray-900 p-4 rounded-lg mb-6">
+                <h3 class="text-lg font-bold text-white mb-3">Selected Text Prompts</h3>
+                <div class="text-gray-400 text-sm leading-relaxed">
+                    <p class="mb-2">I experimented with various prompts to explore the model's capabilities:</p>
+                    <ul class="list-disc list-inside ml-4 space-y-1 mt-2">
+                        <li>'a high quality picture'</li>
+                        <li>'a high quality photo'</li>
+                        <li>'a high quality photo of a city'</li>
+                        <li>'a high quality photo of a city at night'</li>
+                        <li>'a high quality photo of a forest'</li>
+                        <li>'an oil painting of a stormy sea'</li>
+                        <li>'an oil painting of a bouquet'</li>
+                        <li>'an oil painting of people eating potatoes'</li>
+                        <li>'a van gogh style oil painting of a meadow'</li>
+                        <li>'a graphite sketch of a hand'</li>
+                        <li>'a photo of a cat'</li>
+                        <li>'a photo of a polar bear'</li>
+                        <li>'a photo of a cellist performing'</li>
+                        <li>'a photo of a foggy beach'</li>
+                        <li>'a lithograph of a snowy mountain'</li>
+                        <li>'a man wearing a suit'</li>
+                        <li>'a vintage car'</li>
+                        <li>'a vase'</li>
+                        <li>'a vintage clothing store'</li>
+                        <li>''</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Sample Generated Images</h3>
+                <p class="text-gray-400 text-sm mb-4">
+                    Below are samples generated with different prompts and num_inference_steps values.
+                    Random seed used throughout: <strong>100</strong>
+                </p>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="text-center">
+                        <img src="part_a/0_1.png" alt="Sample 1" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">a photo of a foggy beach (steps=20)</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/0_2.png" alt="Sample 2" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">a graphite sketch of a hand (steps=200)</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/0_3.png" alt="Sample 3" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">a high quality photo of a forest (steps=200)</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Part 1 Header -->
+        <div class="w-full max-w-4xl mb-8">
+            <h1 class="text-4xl font-bold text-blue-400 border-b-4 border-blue-400 pb-2">
+                Part 1: Sampling Loops
+            </h1>
+        </div>
+
+        <!-- Part 1.1: Forward Process -->
+        <section id="part1-1" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 1.1: Implementing the Forward Process</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                The forward process adds noise to a clean image. I implemented the forward function using the formula:
+                <br><br>
+                <code class="bg-gray-900 px-2 py-1 rounded">x_t = √(ᾱ_t) * x_0 + √(1 - ᾱ_t) * eps</code>
+                <br><br>
+                where eps ~ N(0, I) is random Gaussian noise according to instructions.
+            </p>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Noisy Campanile at Different Timesteps</h3>
+                <div class="grid md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <img src="part_a/1_1_original.png" alt="Original" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Original</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/1_1_t250.png" alt="t=250" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">t = 250</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/1_1_t500.png" alt="t=500" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">t = 500</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/1_1_t750.png" alt="t=750" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">t = 750</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Part 1.2: Classical Denoising -->
+        <section id="part1-2" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 1.2: Classical Denoising</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                For this section, I attempted to denoise the noisy images using Gaussian blur filtering. The results aren't as clear, but the As expected, classical methods
+                struggle with heavy noise levels and cannot recover fine details.
+            </p>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Results (Noisy left vs. Gaussian blur right)</h3>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div>
+                        <img src="part_a/1_2_t250.png" alt="Denoised t=250"
+                            class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2 text-center">t = 250</p>
+                    </div>
+                    <div>
+                        <img src="part_a/1_2_t500.png" alt="Denoised t=500"
+                            class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2 text-center">t = 500</p>
+                    </div>
+                    <div>
+                        <img src="part_a/1_2_t750.png" alt="Denoised t=750"
+                            class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2 text-center">t = 750</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Part 1.3: One-Step Denoising -->
+        <section id="part1-3" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 1.3: One-Step Denoising</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                Using the pretrained DeepFloyd UNet, I estimated and removed noise in a single step. The UNet predicts
+                the noise eps which I then use to estimate the clean image x_hat.
+            </p>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">One-Step Denoising Results</h3>
+
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <img src="part_a/1_1_original.png" alt="One-step t=250" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2 text-center">Original</p>
+                    </div>
+                    <div>
+                        <img src="part_a/1_3.png" alt="One-step t=250" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2 text-center">Noisy and Denoised</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Part 1.4: Iterative Denoising -->
+        <section id="part1-4" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 1.4: Iterative Denoising</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                Instead of denoising in one step, I implemented iterative denoising that gradually removes noise over
+                multiple steps. Using strided timesteps of size 30, the model progressively denoises the image.
+            </p>
+
+            <div class="text-center">
+                <img src="part_a/1_4.png" alt="Iteration 0" class="rounded-lg shadow-lg w-full">
+                <p class="text-gray-400 text-sm mt-2"></p>
+            </div>
+        </section>
+
+        <!-- Part 1.5: Diffusion Model Sampling -->
+        <section id="part1-5" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 1.5: Diffusion Model Sampling</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                By starting with pure random noise and iteratively denoising using the function in Part 1.4, I generated images from scratch using
+                the prompt "a high quality photo".
+            </p>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Generated Samples</h3>
+                <div class="text-center">
+                    <img src="part_a/1_5.png" alt="Sample 1" class="rounded-lg shadow-lg w-full">
+                    <p class="text-gray-400 text-sm mt-2">Samples</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Part 1.6: CFG -->
+        <section id="part1-6" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 1.6: Classifier-Free Guidance (CFG)</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                I implement Classifier-Free Guidance which dramatically improves image quality because it combines both conditional and unconditional
+                noise estimates. The formula I use is: eps = eps_u + γ(eps_c - eps_u), where γ controls the guidance strength.
+                I used γ = 7 for these results which created good results.
+            </p>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Generated Samples with CFG (γ=7)</h3>
+                <div class="text-center">
+                        <img src="part_a/1_6.png" alt="CFG Sample 1" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Samples</p>
+                    </div>
+            </div>
+        </section>
+
+        <!-- Part 1.7: Image-to-Image Translation -->
+        <section id="part1-7" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 1.7: Image-to-image Translation</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                By controlling the amount of noise we add to our real images and then denoising with CFG, we can edit images
+                while preserving their structure. Lower noise levels (i_start=1) preserve more details, while higher
+                noise levels (i_start=20) allow for larger edits. I show results at different noise levels: [1, 3, 5, 7, 10, 20] for
+                the Campanile, as well as two of my own images.
+            </p>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-2">SDEdit on Campanile</h3>
+                <div class="text-center">
+                    <img src="part_a/1_7_campanile.png" alt="i=1" class="rounded-lg shadow-lg w-full">
+                    <p class="text-gray-400 text-sm mt-4"></p>
+                </div>
+
+                <h3 class="text-xl font-bold text-white mb-2">SDEdit on Bird</h3>
+                <div class="text-center">
+                    <img src="part_a/1_7_bird.png" alt="i=1" class="rounded-lg shadow-lg w-full">
+                    <p class="text-gray-400 text-sm mt-4"></p>
+                </div>
+
+                <h3 class="text-xl font-bold text-white mb-2">SDEdit on Blueberry</h3>
+                <div class="text-center">
+                    <img src="part_a/1_7_blueberry.png" alt="i=1" class="rounded-lg shadow-lg w-full">
+                    <p class="text-gray-400 text-sm mt-4"></p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Part 1.7.1: Hand-Drawn and Web Images -->
+        <section id="part1-7-1" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 1.7.1: Editing Hand-Drawn and Web Images</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                SDEdit works particularly well on non-realistic images like sketches and paintings, projecting them
+                onto the natural image manifold while preserving their structure.
+            </p>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Web Image Edits</h3>
+                <div class="grid md:grid-cols-4 gap-4 mb-6">
+                    <div class="text-center">
+                        <img src="part_a/1_7_1_web_i1.png" alt="Web i=1" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">i_start = 1</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/1_7_1_web_i3.png" alt="Web i=3" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">i_start = 3</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/1_7_1_web_i5.png" alt="Web i=5" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">i_start = 5</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/1_7_1_web_i7.png" alt="Web i=7" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">i_start = 7</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/1_7_1_web_i10.png" alt="Web i=10" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">i_start = 10</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/1_7_1_web_i20.png" alt="Web i=20" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">i_start = 20</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/1_7_1_web_original.png" alt="Web Original" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Original</p>
+                    </div>
+                </div>
+
+                <h3 class="text-xl font-bold text-white mb-4">Web Image</h3>
+                <div class="text-center">
+                    <img src="part_a/1_7_1_web.png" alt="Draw1 i=1" class="rounded-lg shadow-lg w-full">
+                    <p class="text-gray-400 text-sm mt-2">Hand</p>
+                </div>
+
+                <h3 class="text-xl font-bold text-white mb-4">Hand-Drawn Image 1</h3>
+                <div class="text-center">
+                    <img src="part_a/1_7_1_hand1.png" alt="Draw1 i=1" class="rounded-lg shadow-lg w-full">
+                    <p class="text-gray-400 text-sm mt-2">Computer</p>
+                </div>
+
+                <h3 class="text-xl font-bold text-white mb-4">Hand-Drawn Image 2</h3>
+                <div class="text-center">
+                    <img src="part_a/1_7_1_hand2.png" alt="Draw1 i=1" class="rounded-lg shadow-lg w-full">
+                    <p class="text-gray-400 text-sm mt-2">Eye</p>
+                </div>
+                
+            </div>
+        </section>
+
+        <!-- Part 1.7.2: Inpainting -->
+        <section id="part1-7-2" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 1.7.2: Inpainting</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                Using the RePaint algorithm, I implemented inpainting by maintaining the original image pixels outside
+                the mask while allowing the diffusion model to hallucinate new content inside the masked region at each
+                denoising step. The results are shown below.
+            </p>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Campanile Inpainting</h3>
+                <div class="grid md:grid-cols-4 gap-6 mb-6">
+                    <div class="text-center">
+                        <img src="part_a/1_7_2_campanile_original.png" alt="Original"
+                            class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Original</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/1_7_2_campanile_mask.png" alt="Mask" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Mask</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/1_7_2_campanile_masked.png" alt="Masked" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Masked Image</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/1_7_2_campanile_result.png" alt="Result" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Inpainted Result</p>
+                    </div>
+                </div>
+
+                <h3 class="text-xl font-bold text-white mb-4">New York City skyline Inpainting with a polar bear</h3>
+                <div class="grid md:grid-cols-4 gap-6 mb-6">
+                    <div class="text-center">
+                        <img src="part_a/1_7_2_ny_original.png" alt="Custom1 Original"
+                            class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Original</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/1_7_2_ny_mask.png" alt="Custom1 Mask" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Mask</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/1_7_2_ny_masked.png" alt="Custom1 Masked"
+                            class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Masked Image</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/1_7_2_ny_result.png" alt="Custom1 Result"
+                            class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Inpainted Result</p>
+                    </div>
+                </div>
+
+                <h3 class="text-xl font-bold text-white mb-4">Blueberry imprinting with a boquet of flowers</h3>
+                <div class="grid md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <img src="part_a/1_7_2_blueberry_original.png" alt="Custom2 Original"
+                            class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Original</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/1_7_2_blueberry_mask.png" alt="Custom2 Mask" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Mask</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/1_7_2_blueberry_masked.png" alt="Custom2 Masked"
+                            class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Masked Image</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/1_7_2_blueberry_result.png" alt="Custom2 Result"
+                            class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Inpainted Result</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Part 1.7.3: Text-Conditional Image-to-Image -->
+        <section id="part1-7-3" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 1.7.3: Text-Conditional Image-to-Image Translation</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                By using custom text prompts instead of "a high quality photo", I then guide the editing process to
+                create specific a transformation from the custom photo while maintaining the original image structure. This ends of creating
+                really interesting merged photos in between.
+            </p>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Cat -> Campanile</h3>
+                <div class="text-center mb-6">
+                    <img src="part_a/1_7_3_1.png" alt="Rocket i=1" class="rounded-lg shadow-lg w-full">
+                </div>
+
+                <h3 class="text-xl font-bold text-white mb-4">Forest -> New York</h3>
+                <div class="text-center mb-6">
+                    <img src="part_a/1_7_3_2.png" alt="Rocket i=1" class="rounded-lg shadow-lg w-full">
+                </div>
+
+                <h3 class="text-xl font-bold text-white mb-4">Foggy Beach -> Hand</h3>
+                <div class="text-center mb-6">
+                    <img src="part_a/1_7_3_3.png" alt="Rocket i=1" class="rounded-lg shadow-lg w-full">
+                </div>
+            </div>
+        </section>
+
+        <!-- Part 1.8: Visual Anagrams -->
+        <section id="part1-8" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 1.8: Visual Anagrams</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                Visual anagrams are optical illusions where an image appears as one thing normally, but reveals a
+                different image when flipped upside down. I achieved this by averaging noise estimates from
+                the original and flipped images during each denoising step. I first denoise the original image, then flip it upside down 
+                to denoise the second image. I flip it back around then average the noise estimates to compute one denoising step.
+            </p>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Visual Anagram 1: "an oil painting of a stormy sea" ↔ "an oil painting of a bouquet"</h3>
+                    
+                <div class="grid md:grid-cols-2 gap-6 mb-6">
+                    <div class="text-center">
+                        <img src="part_a/1_8_anagram1_normal.png" alt="" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Normal View</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/1_8_anagram1_flipped.png" alt="" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Flipped View</p>
+                    </div>
+                </div>
+
+                <h3 class="text-xl font-bold text-white mb-4">Visual Anagram 2: "an oil painting of people eating potatoes" ↔ "a van gogh style oil painting of a meadow"</h3>
+                <div class="grid md:grid-cols-2 gap-6 mb-6">
+                    <div class="text-center">
+                        <img src="part_a/1_8_anagram2_normal.png" alt="Anagram2 Normal" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Normal View</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/1_8_anagram2_flipped.png" alt="Anagram2 Flipped" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Flipped View</p>
+                    </div>
+                </div>
+
+                <h3 class="text-xl font-bold text-white mb-4">Visual Anagram 3: "a lithograph of a snowy mountain" ↔ "a vintage car"</h3>
+                <div class="grid md:grid-cols-2 gap-6 mb-2">
+                    <div class="text-center">
+                        <img src="part_a/1_8_anagram3_normal.png" alt="Anagram2 Normal" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Normal View</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/1_8_anagram3_flipped.png" alt="Anagram2 Flipped" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Flipped View</p>
+                    </div>
+                </div>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="text-center">
+                        <img src="part_a/1_8_anagram4_normal.png" alt="Anagram2 Normal" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Normal View</p>
+                    </div>
+                    <div class="text-center">
+                        <img src="part_a/1_8_anagram4_flipped.png" alt="Anagram2 Flipped" class="rounded-lg shadow-lg w-full">
+                        <p class="text-gray-400 text-sm mt-2">Flipped View</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Part 1.9: Hybrid Images -->
+        <section id="part1-9" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 1.9: Hybrid Images</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                Following the Factorized Diffusion approach, I created hybrid images by combining low frequencies from
+                one noise estimate with high frequencies from another. When viewed up close, you see one image from the high-pass frequencies; from
+                far away, you see the other from the low-pass frequencies. At each denoising step, I get the noise estimate for prompt 1 and 2. I apply the low-pass
+                filter to eps_1 using a gaussian blur. I then apply a high-pass filter to eps_2 which is just the original - low-pass. 
+                I combine these frequencies to compute a single step.
+            </p>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Hybrid image of a snowy mountain and a vintage car</h3>
+                <div class="text-center mb-6">
+                    <img src="part_a/1_9_hybrid1.png" alt="Hybrid 1"
+                        class="rounded-lg shadow-lg w-full max-w-md mx-auto">
+                    <p class="text-gray-400 text-sm mt-2">Close up: Car ↔ Far away: Mountain</p>
+                </div>
+
+                <h3 class="text-xl font-bold text-white mb-4">Hybrid image of a forest and people eating potatoes</h3>
+                <div class="text-center mb-6">
+                    <img src="part_a/1_9_hybrid2.png" alt="Hybrid 2"
+                        class="rounded-lg shadow-lg w-full max-w-md mx-auto">
+                    <p class="text-gray-400 text-sm mt-2">Close up: Potatoes ↔ Far away: Forest</p>
+                </div>
+
+                <h3 class="text-xl font-bold text-white mb-4">Hybrid image of a man wearing a suit and a meadow</h3>
+                <div class="text-center mb-6">
+                    <img src="part_a/1_9_hybrid3.png" alt="Hybrid 1" class="rounded-lg shadow-lg w-full max-w-md mx-auto">
+                    <p class="text-gray-400 text-sm mt-2">Close up: Man ↔ Far away: Meadow</p>
+                </div>
+                
+            </div>
+        </section>
+
+        <!-- PART B: FLOW MATCHING FROM SCRATCH -->
+
+        <div id="partb" class="w-full max-w-4xl mb-8 mt-16">
+            <h1 class="text-4xl font-bold text-blue-400 border-b-4 border-blue-400 pb-2">
+                Part B: Flow Matching from Scratch
+            </h1>
+        </div>
+
+        <!-- Part B 1.1: UNet -->
+        <section id="partb-1" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 1.1: Implementing the UNet</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                I implemented a UNet architecture for denoising MNIST digits. The UNet consists of downsampling blocks
+                (encoder), flattening + unflattening (bottleneck), and upsampling blocks (decoder) with skip connections to preserve spatial
+                information.
+            </p>
+
+            <div class="text-center mb-6">
+                <img src="part_b/unconditional_arch.png" alt="UNet Architecture"
+                    class="rounded-lg shadow-lg w-full max-w-2xl mx-auto">
+                <p class="text-gray-400 text-sm mt-2">UNet Architecture</p>
+            </div>
+            <div class="text-center mb-6">
+                <img src="part_b/atomic_ops_new.png" alt="UNet Architecture"
+                    class="rounded-lg shadow-lg w-full max-w-2xl mx-auto">
+                <p class="text-gray-400 text-sm mt-2">Standard UNet Operations</p>
+            </div>
+        </section>
+
+        <!-- Part B 1.2: Training -->
+        <section id="partb-1-2" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 1.2: Using the UNet to Train a Denoiser</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                I add gaussian noise to the image and see the image 
+                get noisier over different noise values.
+            </p>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Noising Process Visualization</h3>
+                <div class="text-center">
+                    <img src="part_b/1_2.png" alt="Noise viz 1" class="rounded-lg shadow-lg w-full">
+                </div>
+            </div>
+        </section>
+
+        <!-- Part B 1.2.1: Training Results -->
+        <section id="partb-1-2-1" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 1.2.1: Training the Denoiser</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                I trained the UNet for 5 epochs on MNIST with σ = 0.5, using Adam optimizer (lr=1e-4) and batch size
+                256.
+                The model learns to denoise images effectively, as shown by the loss curve.
+            </p>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Training Loss Curve</h3>
+                <img src="part_b/1_2_1_loss_curve.png" alt="Training Loss" class="rounded-lg shadow-lg w-full mb-6">
+
+                <h3 class="text-xl font-bold text-white mb-4">Denoising Results</h3>
+                <div class="grid md:grid-cols-2 gap-4 mb-6">
+                    <div class="text-center">
+                        <img src="part_b/1_2_1_1.png" alt="Epoch 1 result 1" class="rounded-lg shadow-lg w-full">
+                    </div>
+                    <div class="text-center">
+                        <img src="part_b/1_2_1_2.png" alt="Epoch 1 result 2" class="rounded-lg shadow-lg w-full">
+                    </div>
+                    
+                </div>
+            </div>
+        </section>
+
+        <!-- Part B 1.2.2: OOD Testing -->
+        <section id="partb-1-2-2" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 1.2.2: Out-of-Distribution Testing</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                I tested the denoiser on noise levels it wasn't trained on (σ = [0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0]).
+                The model performs best at σ = 0.5, which makes sense, and degrades gracefully for other noise
+                levels.
+            </p>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Denoising Results</h3>
+                <div class="text-center">
+                    <img src="part_b/1_2_2.png" alt="σ=0.0" class="rounded-lg shadow-lg w-full">
+                </div>
+            </div>
+        </section>
+
+        <!-- Part B 1.2.3: Pure Noise -->
+        <section id="partb-1-2-3" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 1.2.3: Denoising Pure Noise</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                I trained a separate denoiser to denoise pure Gaussian noise (z ~ N(0, I)) directly.
+                This is a much more difficult task, as the model must hallucinate meaningful structure from random noise.
+            </p>
+
+            <div class="mb-8">
+
+                <h3 class="text-xl font-bold text-white mb-4">Training Loss Curve</h3>
+                <img src="part_b/1_2_3_loss_curve.png" alt="Training Loss" class="rounded-lg shadow-lg w-full mb-6">
+
+                <h3 class="text-xl font-bold text-white mb-4">Results</h3>
+                <div class="grid md:grid-cols-2 gap-4 mb-6">
+                    <div class="text-center">
+                        <img src="part_b/1_2_3_1.png" alt="Epoch 1"
+                            class="rounded-lg shadow-lg w-full">
+                    </div>
+                    <div class="text-center">
+                        <img src="part_b/1_2_3_2.png" alt="Epoch 5"
+                            class="rounded-lg shadow-lg w-full">
+                    </div>
+                </div>
+
+                <div class="bg-gray-700 p-6 rounded-lg">
+                    <h3 class="text-lg font-bold text-white mb-3">Observations</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        When training using pure noise, the denoiser learns to minimize the average squared distance to all
+                        training examples, leading to a blurred, average of all the digits. This is evident in epoch 1 but becomes clearer in
+                        epoch 5 and shows the outline of all digits overlayed on top of each other.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Part 2 Header -->
+        <div class="w-full max-w-4xl mb-8 mt-16">
+            <h1 class="text-4xl font-bold text-blue-400 border-b-4 border-blue-400 pb-2">
+                Part 2: Training a Flow Matching Model
+            </h1>
+        </div>
+        
+        <!-- Part 2.1: Time Conditioning -->
+        <section id="partb-2-1" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 2.1: Adding Time Conditioning to UNet</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                For flow matching, I designed a UNet that predicts the flow from noisy data to clean
+                data x. The important idea is conditioning the UNet on time t, which tells the model how noisy the current image
+                is.
+            </p>
+        
+            <div class="text-center mb-6">
+                <img src="part_b/2_1_time_conditioned_unet.png" alt="Time-conditioned UNet"
+                    class="rounded-lg shadow-lg w-full max-w-2xl mx-auto">
+                <p class="text-gray-400 text-sm mt-2">Time-conditioned UNet Architecture</p>
+            </div>
+
+            <div class="text-center mb-6">
+                <img src="part_b/2_1_fcb.png" alt="FCBlock Architecture"
+                    class="rounded-lg shadow-lg w-full max-w-2xl mx-auto">
+                <p class="text-gray-400 text-sm mt-2">FCBlock Architecture</p>
+            </div>
+        </section>
+        
+        <!-- Part 2.2: Training Time-Conditioned UNet -->
+        <section id="partb-2-2" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 2.2: Training the Time-Conditioned UNet</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                I trained the time-conditioned UNet using flow matching objective. For each training step, I sample a random
+                timestep t, create noisy image x_t = t·x_1 + (1-t)·x_0, and supervised the network to predict the target flow vector.
+            </p>
+        
+            <div class="bg-gray-700 p-6 rounded-lg mb-6">
+                <h3 class="text-lg font-bold text-white mb-3">Training Configuration</h3>
+                <ul class="list-disc list-inside text-gray-400 space-y-2 text-sm">
+                    <li><strong>Batch size:</strong> 128</li>
+                    <li><strong>Hidden dimension (D):</strong> 128</li>
+                    <li><strong>Optimizer:</strong> Adam with lr=1e-3</li>
+                    <li><strong>Num of epochs:</strong> 10</li>
+                    <li><strong>Num ts:</strong> 50</li>
+                    <li><strong>Learning rate scheduler:</strong> ExponentialLR</li>
+                </ul>
+            </div>
+        
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Training Algorithm</h3>
+                <img src="part_b/2_2_algo.png" alt="Time-conditioned training loss" class="rounded-lg shadow-lg w-full mb-4">
+
+                <h3 class="text-xl font-bold text-white mb-4">Training Loss Curve</h3>
+                <img src="part_b/2_2_loss_curve.png" alt="Time-conditioned training loss"
+                    class="rounded-lg shadow-lg w-full mb-4">
+            </div>
+        </section>
+        
+        <!-- Part 2.3: Sampling -->
+        <section id="partb-2-3" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 2.3: Sampling from the Time-Conditioned UNet</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                To generate images, I start with pure noise and iteratively follow the predicted flow to denoise and 
+                reach clean images.
+            </p>
+        
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Sampling Results After Epoch 1</h3>
+                <div class="text-center mb-8">
+                    <img src="part_b/2_3_epoch1.png" alt="Epoch 1 sample 1" class="rounded-lg shadow-lg w-full">
+                </div>
+        
+                <h3 class="text-xl font-bold text-white mb-4">Sampling Results After Epoch 5</h3>
+                <div class="text-center mb-8">
+                    <img src="part_b/2_3_epoch5.png" alt="Epoch 5 sample 1" class="rounded-lg shadow-lg w-full">
+                </div>
+        
+                <h3 class="text-xl font-bold text-white mb-4">Sampling Results After Epoch 10</h3>
+                <div class="text-center mb-8">
+                    <img src="part_b/2_3_epoch10.png" alt="Epoch 10 sample 1" class="rounded-lg shadow-lg w-full">
+                </div>
+            </div>
+        </section>
+        
+        <!-- Part 2.4: Class Conditioning -->
+        <section id="partb-2-4" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 2.4: Adding Class-Conditioning to UNet</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                To give more control over generation and enable classifier-free guidance, I added class conditioning to
+                the UNet. The model now takes both time t and class label c (as a one-hot vector) as input.
+            </p>
+        </section>
+        
+        <!-- Part 2.5: Training Class-Conditioned -->
+        <section id="partb-2-5" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 2.5: Training the Class-Conditioned UNet</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                Training is similar to the time-only model, but now I also pass in the class label c.
+            </p>
+
+            <h3 class="text-lg font-bold text-white mb-3">Training Configuration</h3>
+            <ul class="list-disc list-inside text-gray-400 space-y-2 text-sm mb-10">
+                <li><strong>Batch size:</strong> 128</li>
+                <li><strong>Hidden dimension (D):</strong> 128</li>
+                <li><strong>Optimizer:</strong> Adam with lr=1e-3</li>
+                <li><strong>Num of epochs:</strong> 10</li>
+                <li><strong>Num of classes:</strong> 10</li>
+                <li><strong>Num ts:</strong> 300</li>
+                <li><strong>Dropout:</strong> 10%</li>
+            </ul>
+        
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Training Algorithm</h3>
+                <img src="part_b/2_5_algo.png" alt="Class-conditioned training loss" class="rounded-lg shadow-lg w-full mb-4">
+
+
+                <h3 class="text-xl font-bold text-white mb-4">Training Loss Curve</h3>
+                <img src="part_b/2_5_loss_curve.png" alt="Class-conditioned training loss"
+                    class="rounded-lg shadow-lg w-full mb-4">
+            </div>
+        </section>
+        
+        <!-- Part 2.6: Sampling with Class Conditioning -->
+        <section id="partb-2-6" class="w-full max-w-4xl mb-12 bg-gray-800 p-8 rounded-xl shadow-lg">
+            <h2 class="text-3xl font-bold text-white mb-4">Part 2.6: Sampling from Class-Conditioned UNet</h2>
+            <p class="text-gray-400 leading-relaxed mb-6">
+                I use classifier-free guidance (CFG) with γ=5.0 during sampling. This produces high-quality, more class-specific
+                digits as shown below.
+            </p>
+        
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Training Algorithm</h3>
+                <img src="part_b/2_6_algo.png" alt="All digits epoch 1" class="rounded-lg shadow-lg w-full mb-6">
+                
+                <h3 class="text-xl font-bold text-white mb-4">Digits After Epoch 1</h3>
+                <img src="part_b/2_6_1.png" alt="All digits epoch 1" class="rounded-lg shadow-lg w-full mb-6">
+        
+                <h3 class="text-xl font-bold text-white mb-4">Digits After Epoch 5</h3>
+                <img src="part_b/2_6_5.png" alt="All digits epoch 5" class="rounded-lg shadow-lg w-full mb-6">
+        
+                <h3 class="text-xl font-bold text-white mb-4">Digits After Epoch 10</h3>
+                <img src="part_b/2_6_10.png" alt="All digits epoch 10" class="rounded-lg shadow-lg w-full mb-6">
+            </div>
+        
+            <div class="bg-gray-700 p-6 rounded-lg mb-8">
+                <h3 class="text-lg font-bold text-white mb-3">Removing the Learning Rate Scheduler</h3>
+                <p class="text-gray-400 text-sm leading-relaxed mb-4">
+                    To simplify training, I experimented with removing the exponential learning rate scheduler. To
+                    compensate for its removal, I made the following adjustments:
+                </p>
+                <ul class="list-disc list-inside text-gray-400 space-y-2 text-sm mb-4">
+                    <li>Reduced initial learning rate from 1e-3 to 5e-4</li>
+                </ul>
+                <p class="text-gray-400 text-sm leading-relaxed">
+                    The results were comparable to training with the scheduler, showing how hyperparameter turning
+                    can achieve similar performance without the added complexity.
+                </p>
+            </div>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white mb-4">Results Without Scheduler</h3>
+                <h3 class="text-xl font-bold text-white mb-4">Training Loss Curve</h3>
+                <img src="part_b/2_6_loss_curve.png" alt="Class-conditioned training loss" class="rounded-lg shadow-lg w-full mb-4">
+                
+                <h3 class="text-xl font-bold text-white mb-4">Digits After Epoch 1</h3>
+                <img src="part_b/2_6_no_1.png" alt="All digits epoch 1" class="rounded-lg shadow-lg w-full mb-6">
+            
+                <h3 class="text-xl font-bold text-white mb-4">Digits After Epoch 5</h3>
+                <img src="part_b/2_6_no_5.png" alt="All digits epoch 5" class="rounded-lg shadow-lg w-full mb-6">
+            
+                <h3 class="text-xl font-bold text-white mb-4">Digits After Epoch 10</h3>
+                <img src="part_b/2_6_no_10.png" alt="All digits epoch 10" class="rounded-lg shadow-lg w-full mb-6">
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="text-center text-gray-500 text-sm mt-12">
+            <p>CS 180/280A: Intro to Computer Vision and Computational Photography</p>
+            <p class="mt-2">University of California, Berkeley • Fall 2025</p>
+        </footer>
+    </div>
+
+    <!-- TOC Script -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const sections = document.querySelectorAll("section[id], div[id]");
+            const navLinks = document.querySelectorAll("#toc nav a");
+
+            function activateLink() {
+                let current = "";
+                sections.forEach(section => {
+                    const rect = section.getBoundingClientRect();
+                    if (rect.top <= 150 && rect.bottom >= 150) {
+                        current = section.id;
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove("text-blue-400", "font-semibold");
+                    if (link.getAttribute("href") === `#${current}`) {
+                        link.classList.add("text-blue-400", "font-semibold");
+                    }
+                });
+            }
+
+            window.addEventListener("scroll", activateLink);
+            activateLink();
+        });
+    </script>
+
+</body>
+
+</html>

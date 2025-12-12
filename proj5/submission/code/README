@@ -1,0 +1,6 @@
+My two files for part 5a and 5b are in the notebooks cs180_proj5a.ipynb and cs180_proj5b.ipynb respectively.
+
+- You should replace the hugging face token
+- All images used are also attached in my github in the respective data folders. You may need to download these images and configure the google drive path correctly if running locally,
+  however, they should run top to bottom for each part. For the handwritten images in part A, I ran them in previous runtime session so the images/results on the website
+  are correct, not the outputs in the notebook.
